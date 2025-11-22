@@ -4,8 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+
+    <!-- Políticas de Seguridad -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
+                 style-src 'self' 'unsafe-inline'; 
+                 img-src 'self' data: https:; 
+                 font-src 'self' data:; 
+                 connect-src 'self'; 
+                 object-src 'none'; 
+                 base-uri 'self'; 
+                 form-action 'self'; 
+                 frame-ancestors 'none'; 
+                 upgrade-insecure-requests;">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="no-referrer">
+
     <title>Horarios</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icons/icon-192.png">
@@ -58,9 +74,67 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 1rem;
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+                align-items: start;
+            }
+
+            .left-column {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .right-column {
+                position: sticky;
+                top: calc(3.5rem + 1rem);
+            }
+
+            #lista-registros {
+                max-height: 550px;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding-right: 0.5rem;
+                padding: 0.5rem;
+            }
+
+            #lista-registros::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            #lista-registros::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 4px;
+            }
+
+            #lista-registros::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+
+            #lista-registros::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+
+            body.dark-mode #lista-registros::-webkit-scrollbar-track {
+                background: #1e293b;
+            }
+
+            body.dark-mode #lista-registros::-webkit-scrollbar-thumb {
+                background: #475569;
+            }
+
+            body.dark-mode #lista-registros::-webkit-scrollbar-thumb:hover {
+                background: #64748b;
+            }
         }
 
         .card {
@@ -581,7 +655,6 @@
 
         .animated-card {
             animation: zoomIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-            /* Usamos una curva más dinámica */
         }
 
         .toast.success {
@@ -704,17 +777,33 @@
             opacity: 1;
         }
 
+        .time-btn:active {
+            background: transparent;
+            color: #6b7280;
+            opacity: 1;
+        }
+
         body.dark-mode .time-btn:disabled {
             background: transparent;
             color: #6b7280;
             transform: none;
+        }
+
+        .time-btn.filtro-activo {
+            background: #5382e6;
+            color: white;
+        }
+
+        body.dark-mode .time-btn.filtro-activo {
+            background: #5382e6;
+            color: white;
         }
     </style>
 </head>
 
 <body>
     <script>
-        (function () {
+        (function () { //Evitar parpadeo al actualizar, (modo oscuro)
             try {
                 var stored = localStorage.getItem('temaOscuro');
                 if (stored === 'true' || stored === null) {
@@ -830,6 +919,10 @@
             <line x1="3" y1="10" x2="21" y2="10" class="icon-line" stroke="currentColor"></line>
             <path d="M9 16l2 2 4-4" class="icon-line" stroke="currentColor"></path>
         </symbol>
+        <symbol id="icon-filter" viewBox="0 0 24 24">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" class="icon-line" stroke="currentColor">
+            </polygon>
+        </symbol>
     </svg>
 
     <div class="header">
@@ -854,84 +947,93 @@
 
     <div class="container">
 
-        <div class="card stats-card animated-card" id="stats-card" onclick="UILogic.alternarVista()"
-            style="animation-delay: 0s;">
-            <h2 id="stats-titulo">📅 Hoy</h2>
-            <div class="stats-number" id="stats-semana">
-                <div>0 horas 0 minutos</div>
+        <div class="left-column">
+            <div class="card stats-card animated-card" id="stats-card" onclick="UILogic.alternarVista()"
+                style="animation-delay: 0s;">
+                <h2 id="stats-titulo">📅 Hoy</h2>
+                <div class="stats-number" id="stats-semana">
+                    <div>0 horas 0 minutos</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <div id="stats-mensaje">Faltan 0 horas 0 minutos</div>
+                <div id="stats-buffer" style="font-size: 0.85rem; margin-top: 0.5rem; min-height: 1.2rem;"></div>
+                <span class="toggle-hint" id="toggle-hint">Toca para ver la Semana</span>
             </div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress-bar" style="width: 0%"></div>
+
+            <div class="card animated-card" style="animation-delay: 0.1s;">
+                <h2><svg class="icon">
+                        <use href="#icon-edit" />
+                    </svg> Registrar Horas</h2>
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input type="date" id="fecha" />
+                    <span class="input-error" id="error-fecha">Fecha inválida</span>
+                </div>
+                <div class="form-group">
+                    <label>Hora de Entrada</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="entrada" placeholder="00:00 para Feriado" maxlength="5" />
+                        <button class="time-btn" onclick="UILogic.pegarHoraActual('entrada')"><svg class="icon">
+                                <use href="#icon-clock" />
+                            </svg></button>
+                        <button class="time-btn" onclick="UILogic.limpiarCampo('entrada')"><svg class="icon">
+                                <use href="#icon-broom" />
+                            </svg></button>
+                    </div>
+                    <span class="input-error" id="error-entrada">Formato inválido (HH:MM)</span>
+                </div>
+                <div class="form-group">
+                    <label>Hora de Salida</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="salida" placeholder="00:00 para Feriado" maxlength="5" />
+                        <button class="time-btn" onclick="UILogic.pegarHoraActual('salida')"><svg class="icon">
+                                <use href="#icon-clock" />
+                            </svg></button>
+                        <button class="time-btn" onclick="UILogic.limpiarCampo('salida')"><svg class="icon">
+                                <use href="#icon-broom" />
+                            </svg></button>
+                    </div>
+                    <span class="input-error" id="error-salida">Formato inválido (HH:MM)</span>
+                </div>
+                <button onclick="DataManagement.agregarRegistro()" id="btn-agregar"><svg class="icon">
+                        <use href="#icon-save" />
+                    </svg> Registrar</button>
             </div>
-            <div id="stats-mensaje">Faltan 0 horas 0 minutos</div>
-            <div id="stats-buffer" style="font-size: 0.85rem; margin-top: 0.5rem; min-height: 1.2rem;"></div>
-            <span class="toggle-hint" id="toggle-hint">Toca para ver la Semana</span>
         </div>
 
-        <div class="card animated-card" style="animation-delay: 0.1s;">
-            <h2><svg class="icon">
-                    <use href="#icon-edit" />
-                </svg> Registrar Horas</h2>
-            <div class="form-group">
-                <label>Fecha</label>
-                <input type="date" id="fecha" />
-                <span class="input-error" id="error-fecha">Fecha inválida</span>
-            </div>
-            <div class="form-group">
-                <label>Hora de Entrada</label>
-                <div class="input-with-btn">
-                    <input type="text" id="entrada" placeholder="00:00 para Feriado" maxlength="5" />
-                    <button class="time-btn" onclick="UILogic.pegarHoraActual('entrada')"><svg class="icon">
-                            <use href="#icon-clock" />
-                        </svg></button>
-                    <button class="time-btn" onclick="UILogic.limpiarCampo('entrada')"><svg class="icon">
-                            <use href="#icon-broom" />
-                        </svg></button>
-                </div>
-                <span class="input-error" id="error-entrada">Formato inválido (HH:MM)</span>
-            </div>
-            <div class="form-group">
-                <label>Hora de Salida</label>
-                <div class="input-with-btn">
-                    <input type="text" id="salida" placeholder="00:00 para Feriado" maxlength="5" />
-                    <button class="time-btn" onclick="UILogic.pegarHoraActual('salida')"><svg class="icon">
-                            <use href="#icon-clock" />
-                        </svg></button>
-                    <button class="time-btn" onclick="UILogic.limpiarCampo('salida')"><svg class="icon">
-                            <use href="#icon-broom" />
-                        </svg></button>
-                </div>
-                <span class="input-error" id="error-salida">Formato inválido (HH:MM)</span>
-            </div>
-            <button onclick="DataManagement.agregarRegistro()" id="btn-agregar"><svg class="icon">
-                    <use href="#icon-save" />
-                </svg> Registrar</button>
-        </div>
-
-        <div class="card animated-card" style="animation-delay: 0.2s;">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                <h2 style="margin-bottom: 0;">
-                    <svg class="icon">
-                        <use href="#icon-list" />
-                    </svg> Histórico
-                </h2>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="time-btn" id="btn-undo" onclick="HistoryManager.undo()" title="Deshacer">
+        <div class="right-column">
+            <div class="card animated-card" style="animation-delay: 0.2s;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <h2 style="margin-bottom: 0;">
                         <svg class="icon">
-                            <use href="#icon-undo" />
-                        </svg>
-                    </button>
-                    <button class="time-btn" id="btn-redo" onclick="HistoryManager.redo()" title="Rehacer">
-                        <svg class="icon">
-                            <use href="#icon-redo" />
-                        </svg>
-                    </button>
+                            <use href="#icon-list" />
+                        </svg> Histórico
+                    </h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="time-btn" id="btn-filtro" onclick="UILogic.mostrarFiltros()" title="Filtrar">
+                            <svg class="icon">
+                                <use href="#icon-filter" />
+                            </svg>
+                        </button>
+                        <button class="time-btn" id="btn-undo" onclick="HistoryManager.undo()" title="Deshacer">
+                            <svg class="icon">
+                                <use href="#icon-undo" />
+                            </svg>
+                        </button>
+                        <button class="time-btn" id="btn-redo" onclick="HistoryManager.redo()" title="Rehacer">
+                            <svg class="icon">
+                                <use href="#icon-redo" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
+                <div id="lista-registros"></div>
+                <button id="btn-cargar-mas" class="btn-small btn-backup" style="margin-top: 1rem; display: none;"
+                    onclick="DataManagement.cargarMasRegistros()"></button>
             </div>
-            <div id="lista-registros"></div>
-            <button id="btn-cargar-mas" class="btn-small btn-backup" style="margin-top: 1rem; display: none;"
-                onclick="DataManagement.cargarMasRegistros()"></button>
         </div>
     </div>
 
@@ -944,7 +1046,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.61</span> <!-- Version -->
+                <span class="version-text">v5.64</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1086,6 +1188,43 @@
             </div>
         </div>
     </div>
+    <div class="modal" id="modal-filtros">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-filter" />
+                    </svg>
+                    Filtrar Histórico
+                </span>
+            </h3>
+            <div class="form-group">
+                <label>Fecha desde</label>
+                <input type="date" id="filtro-fecha-desde" />
+            </div>
+            <div class="form-group">
+                <label>Fecha hasta</label>
+                <input type="date" id="filtro-fecha-hasta" />
+            </div>
+            <div class="btn-group">
+                <button class="btn-edit" onclick="DataManagement.aplicarFiltros()">
+                    <svg class="icon">
+                        <use href="#icon-filter" />
+                    </svg> Aplicar
+                </button>
+                <button class="btn-cancel" onclick="DataManagement.limpiarFiltros()">
+                    <svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg> Limpiar
+                </button>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarFiltros()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         (function () {
@@ -1131,12 +1270,16 @@
                 function sanitizeString(str, maxLength = SECURITY_LIMITS.MAX_STRING_LENGTH) {
                     if (typeof str !== 'string') return '';
 
-                    // Remover más caracteres peligrosos
                     return str
-                        .replace(/[<>"'`]/g, '') // Comillas invertidas también
-                        .replace(/javascript:/gi, '') // Prevenir javascript: URLs
-                        .replace(/on\w+\s*=/gi, '') // Prevenir event handlers (onclick=, onerror=)
-                        .replace(/[\x00-\x1F\x7F]/g, '') // Remover caracteres de control
+                        .replace(/[<>"'`]/g, '')
+                        .replace(/javascript:/gi, '')
+                        .replace(/data:/gi, '')
+                        .replace(/vbscript:/gi, '')
+                        .replace(/on\w+\s*=/gi, '')
+                        .replace(/[\x00-\x1F\x7F]/g, '')
+                        .replace(/&lt;/gi, '')
+                        .replace(/&gt;/gi, '')
+                        .replace(/&#/g, '')
                         .trim()
                         .substring(0, maxLength);
                 }
@@ -1342,6 +1485,9 @@
                 let registros = [], diasHabiles = 5, horasDiarias = 7, editandoId = null;
                 let vistaActual = 'diaria', registrosVisibles = 10;
                 let cacheSemana = { inicio: null, fin: null, calculado: null };
+                let filtroActivo = false;
+                let filtroDesde = null;
+                let filtroHasta = null;
 
                 function cargarConVerificacion() {
                     try {
@@ -1807,14 +1953,32 @@
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         try {
-                            //Validar que el contenido no esté vacío
+                            // Validar que el contenido no esté vacío
                             const contenido = e.target.result;
                             if (!contenido || contenido.trim().length === 0) {
                                 UILogic.mostrarToast('Archivo vacío', 'error');
                                 return;
                             }
 
-                            const data = JSON.parse(contenido);
+                            // Parse seguro con protección contra Prototype Pollution
+                            const data = JSON.parse(contenido, (key, value) => {
+                                // Bloquear propiedades peligrosas
+                                if (['__proto__', 'constructor', 'prototype'].includes(key)) {
+                                    console.warn('⚠️ Intento de prototype pollution bloqueado');
+                                    return undefined;
+                                }
+                                return value;
+                            });
+
+                            // claves permitidas
+                            const allowedRootKeys = ['registros', 'diasHabiles', 'horasDiarias', 'fecha', 'version', 'hash', 'timestamp'];
+                            const dataKeys = Object.keys(data);
+                            const hasInvalidKeys = dataKeys.some(k => !allowedRootKeys.includes(k));
+
+                            if (hasInvalidKeys) {
+                                UILogic.mostrarToast('Archivo con estructura sospechosa', 'error');
+                                return;
+                            }
 
                             //Validación estricta de estructura
                             if (!data || typeof data !== 'object' || Array.isArray(data)) {
@@ -1946,7 +2110,6 @@
 
                 function calcularBufferSemanal(inicioSemana, fechaHoy) {
                     let buffer = 0;
-                    // Normalizar fechas
                     let fechaIteracion = new Date(inicioSemana.replace(/-/g, '/') + ' 00:00:00');
                     let fechaLimite = new Date(fechaHoy.replace(/-/g, '/') + ' 00:00:00');
 
@@ -1981,8 +2144,7 @@
                             horasObjetivoDia = horasDiarias;
                         }
 
-                        // 2. Hechas: Solo contamos si hay salida.
-                        // ELIMINADO: El cálculo "en vivo" (else if r.entrada...) para que no afecte al buffer.
+                        // 2. Hechas:Solo contamos si hay salida.
                         if (r && !esFeriado) {
                             if (r.salida) {
                                 horasHechasDia = r.total;
@@ -1993,6 +2155,48 @@
                         fechaIteracion.setDate(fechaIteracion.getDate() + 1);
                     }
                     return buffer;
+                }
+
+                function aplicarFiltros() {
+                    const desde = $('filtro-fecha-desde').value;
+                    const hasta = $('filtro-fecha-hasta').value;
+
+                    if (!desde && !hasta) {
+                        UILogic.mostrarToast('Selecciona al menos una fecha', 'warning');
+                        return;
+                    }
+
+                    filtroActivo = true;
+                    filtroDesde = desde || null;
+                    filtroHasta = hasta || null;
+
+                    guardarYActualizar(false);
+                    UILogic.cerrarFiltros();
+                    UILogic.mostrarToast('Filtro aplicado', 'success');
+                    document.getElementById('btn-filtro').classList.add('filtro-activo');
+                }
+
+                function limpiarFiltros() {
+                    filtroActivo = false;
+                    filtroDesde = null;
+                    filtroHasta = null;
+                    $('filtro-fecha-desde').value = '';
+                    $('filtro-fecha-hasta').value = '';
+
+                    guardarYActualizar(false);
+                    UILogic.cerrarFiltros();
+                    UILogic.mostrarToast('Filtro eliminado', 'info');
+                    document.getElementById('btn-filtro').classList.remove('filtro-activo');
+                }
+
+                function obtenerRegistrosFiltrados() {
+                    if (!filtroActivo) return registros;
+
+                    return registros.filter(r => {
+                        if (filtroDesde && r.fecha < filtroDesde) return false;
+                        if (filtroHasta && r.fecha > filtroHasta) return false;
+                        return true;
+                    });
                 }
 
                 return {
@@ -2025,6 +2229,9 @@
                     exportarJSON,
                     importarDatos,
                     calcularBufferSemanal,
+                    aplicarFiltros,
+                    limpiarFiltros,
+                    obtenerRegistrosFiltrados,
                     undoAction: function () {
                         const prevState = HistoryManager.undo();
                         if (prevState) {
@@ -2041,6 +2248,7 @@
                             UILogic.mostrarToast('Rehecho', 'info');
                         }
                     }
+
                 };
 
             })(SecurityAndUtils);
@@ -2191,15 +2399,18 @@
                     lista.innerHTML = '';
                     const horasDiarias = D.horasDiarias();
 
-                    const registrosAMostrar = registros.slice(0, D.registrosVisibles());
+                    // Usar registros filtrados si hay filtro activo
+                    const registrosAMostrar = D.obtenerRegistrosFiltrados().slice(0, D.registrosVisibles());
+
                     if (registrosAMostrar.length === 0) {
                         lista.innerHTML = '<div class="empty-state">No hay registros</div>';
                         btnCargarMas.style.display = 'none';
                         return;
                     }
 
-                    if (registros.length > D.registrosVisibles()) {
-                        const restantes = registros.length - D.registrosVisibles();
+                    const registrosTotales = D.obtenerRegistrosFiltrados().length;
+                    if (registrosTotales > D.registrosVisibles()) {
+                        const restantes = registrosTotales - D.registrosVisibles();
                         const aCargar = Math.min(10, restantes);
                         btnCargarMas.textContent = `Cargar más (${aCargar} restantes)`;
                         btnCargarMas.style.display = 'block';
@@ -2270,7 +2481,6 @@
                     const registros = D.registros();
                     const horasSemanales = D.horasSemanales();
                     const horasDiarias = D.horasDiarias();
-                    // 1. OBTENER LA CONFIGURACIÓN REAL DE DÍAS HÁBILES
                     const diasHabilesConfig = D.diasHabiles();
                     const vistaActual = D.vistaActual();
 
@@ -2300,9 +2510,12 @@
                                 const bufferTextoHoras = horasATexto(Math.abs(bufferSemanal));
                                 const bufferLabel = esPositivo ? 'extras' : 'faltantes';
 
-                                bufferEl.innerHTML = `<span style="color: ${bufferColor}; font-weight: 500;">
-                                ${bufferIcono} ${bufferTextoHoras} ${bufferLabel} esta semana
-                                </span>`;
+                                bufferEl.textContent = '';
+                                const span = document.createElement('span');
+                                span.style.color = bufferColor;
+                                span.style.fontWeight = '500';
+                                span.textContent = `${bufferIcono} ${bufferTextoHoras} ${bufferLabel} esta semana`;
+                                bufferEl.appendChild(span);
                             }
                         }
                     }
@@ -2326,17 +2539,12 @@
                         }
 
                         if (mensajeEl) {
-                            // --- LÓGICA CORREGIDA: USO DE CONFIGURACIÓN DE DÍAS HÁBILES ---
                             const diaSemanaHoy = new Date().getDay(); // 0=Dom, 1=Lun...
                             let esDiaDeDescanso = false;
 
                             if (diaSemanaHoy === 0) {
-                                // Domingo es descanso salvo que trabajes 7 días
                                 esDiaDeDescanso = (diasHabilesConfig < 7);
                             } else {
-                                // Lunes a Sábado: es descanso si el día actual supera tu configuración
-                                // Ej: Si config es 5 (Lun-Vie), Sábado (6) > 5 -> Descanso (True)
-                                // Ej: Si config es 6 (Lun-Sab), Sábado (6) no es > 6 -> Laboral (False)
                                 esDiaDeDescanso = (diaSemanaHoy > diasHabilesConfig);
                             }
 
@@ -2536,6 +2744,8 @@
                     HistoryManager.saveState(D.registros());
                     HistoryManager.updateButtons();
 
+
+
                     if (localStorage.getItem('horasDiarias') === null) {
                         localStorage.setItem('horasDiarias', config.horasDiarias);
                     }
@@ -2562,13 +2772,14 @@
                         cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
                         mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
-                        incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy
+                        incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros, cerrarFiltros
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
                         mostrarImportar: mostrarImportar, importarDatos: D.importarDatos, borrarTodoHistorial: D.borrarTodoHistorial,
                         guardarEdicion: D.guardarEdicion, eliminarRegistroActual: D.eliminarRegistroActual, cargarMasRegistros: D.cargarMasRegistros,
-                        undoAction: D.undoAction, redoAction: D.redoAction
+                        undoAction: D.undoAction, redoAction: D.redoAction, aplicarFiltros: D.aplicarFiltros,
+                        limpiarFiltros: D.limpiarFiltros,
                     };
                     window.HistoryManager = {
                         undo: D.undoAction,
@@ -2580,12 +2791,20 @@
                     console.log('Sistema iniciado correctamente Luigibosca');
                 }
 
+                function mostrarFiltros() {
+                    $('modal-filtros').classList.add('show');
+                }
+
+                function cerrarFiltros() {
+                    $('modal-filtros').classList.remove('show');
+                }
+
                 return {
                     init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
                     cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast, mostrarError,
                     limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                     incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
-                    incrementarDiasHabiles, decrementarDiasHabiles
+                    incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros,
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -2594,10 +2813,10 @@
         })();
     </script>
     <script>
-        // Registro del Service Worker para PWA
+        // Registro del Service Worker para PWA despues del script principal //
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('./sw.js')
+                navigator.serviceWorker.register('./sw.js') //RUTA DEL SERVICE WORKER
                     .then(function (registration) {
                         console.log('ServiceWorker registrado con éxito: ', registration.scope);
                     }, function (err) {
