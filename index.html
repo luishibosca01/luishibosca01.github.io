@@ -58,7 +58,6 @@
             --input-bg: #374151;
             --input-focus: #4b5563;
             --c-gray-btn: #4b5563;
-            /* Botones desactivados/neutros en dark */
             --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
 
@@ -276,6 +275,7 @@
             background: var(--c-red);
         }
 
+        .btn-clean,
         .btn-export {
             background: var(--c-green);
         }
@@ -303,7 +303,6 @@
             padding: 0.5rem;
             min-width: 44px;
             height: 44px;
-            /* Unificado altura */
             background: transparent;
             color: var(--text-main);
             border: 1px solid var(--border);
@@ -974,7 +973,6 @@
                     Filtrar Histórico
                 </span>
             </h3>
-            <div class="contenedor-fechas">
                 <div class="form-group">
                     <label>Desde</label>
                     <input type="date" id="filtro-fecha-desde" />
@@ -983,14 +981,13 @@
                     <label>Hasta</label>
                     <input type="date" id="filtro-fecha-hasta" />
                 </div>
-            </div>
             <div class="btn-group">
                 <button class="btn-edit" onclick="DataManagement.aplicarFiltros()">
                     <svg class="icon">
                         <use href="#icon-filter" />
                     </svg> Aplicar
                 </button>
-                <button class="btn-cancel" onclick="DataManagement.limpiarFiltros()">
+                <button class="btn-clean" onclick="DataManagement.limpiarFiltros()">
                     <svg class="icon">
                         <use href="#icon-cancelar" />
                     </svg> Limpiar
