@@ -291,6 +291,10 @@
             background: #c05d76 !important;
         }
 
+        .progress-fill.purple {
+            background: #8b5cf6 !important;
+        }
+
         .registro-item {
             border: 1px solid #e5e7eb;
             border-radius: 8px;
@@ -820,6 +824,10 @@
             display: flex;
             flex-direction: column;
         }
+
+        .registro-total.purple-text {
+            color: #8b5cf6;
+        }
     </style>
 </head>
 
@@ -994,7 +1002,7 @@
                     <span class="input-error" id="error-fecha">Fecha inválida</span>
                 </div>
                 <div class="form-group">
-                    <label>Hora de Entrada</label>
+                    <label>Entrada</label>
                     <div class="input-with-btn">
                         <input type="text" id="entrada" inputmode="numeric" placeholder="00:00 para Feriado"
                             maxlength="5" />
@@ -1008,7 +1016,7 @@
                     <span class="input-error" id="error-entrada">Formato inválido (HH:MM)</span>
                 </div>
                 <div class="form-group">
-                    <label>Hora de Salida</label>
+                    <label>Salida</label>
                     <div class="input-with-btn">
                         <input type="text" id="salida" inputmode="numeric" placeholder="00:00 para Feriado"
                             maxlength="5" />
@@ -1070,7 +1078,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.66</span> <!-- Version -->
+                <span class="version-text">v5.69</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1225,11 +1233,11 @@
             </h3>
             <div class="contenedor-fechas">
                 <div class="form-group">
-                    <label>Fecha desde</label>
+                    <label>Desde</label>
                     <input type="date" id="filtro-fecha-desde" />
                 </div>
                 <div class="form-group">
-                    <label>Fecha hasta</label>
+                    <label>Hasta</label>
                     <input type="date" id="filtro-fecha-hasta" />
                 </div>
             </div>
@@ -1616,6 +1624,10 @@
 
                 function calcularHoras(e, s, tf = null) {
                     const tfMinutos = tf ? tiempoEnMinutos(tf) : 0;
+                    if (e === '11:11' && s === '11:11') {
+                        const minDia = horasDiarias * 60;
+                        return { horas: 0, minutos: 0, total: horasDiarias, esAusencia: true };
+                    }
 
                     if (e === '00:00' && s === '00:00') {
                         const minFeriado = horasDiarias * 60;
@@ -1642,7 +1654,10 @@
                     let horasDescontar = 0;
 
                     registros.forEach(r => {
-                        if (r.fecha >= inicio && r.fecha <= fin && r.entrada === '00:00' && r.salida === '00:00') {
+                        const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
+                        const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+
+                        if (r.fecha >= inicio && r.fecha <= fin && (esFeriado || esAusencia)) {
                             horasDescontar += horasDiariasLocal;
                         }
                     });
@@ -2146,10 +2161,7 @@
                         const d = String(fechaIteracion.getDate()).padStart(2, '0');
                         const isoDate = `${y}-${m}-${d}`;
 
-                        // 0 = Domingo, 1 = Lunes ... 6 = Sábado
                         const numDia = fechaIteracion.getDay();
-
-                        // Determinar si es día laboral basado en la config
                         let esDiaLaboralConfigurado = false;
 
                         if (numDia === 0) {
@@ -2163,16 +2175,16 @@
                         let horasHechasDia = 0;
 
                         const esFeriado = r && r.entrada === '00:00' && r.salida === '00:00';
-                        const tieneSalida = r && r.salida && !esFeriado;
+                        const esAusencia = r && r.entrada === '11:11' && r.salida === '11:11';
+
+                        const tieneSalida = r && r.salida && !esFeriado && !esAusencia;
                         const esDiaPasado = isoDate < fechaHoy;
 
-                        // 1. Objetivo: Solo cuenta si es pasado o si HOY ya cerraste turno (tiene salida)
-                        if (esDiaLaboralConfigurado && !esFeriado && (esDiaPasado || (isoDate === fechaHoy && tieneSalida))) {
+                        if (esDiaLaboralConfigurado && !esFeriado && !esAusencia && (esDiaPasado || (isoDate === fechaHoy && tieneSalida))) {
                             horasObjetivoDia = horasDiarias;
                         }
 
-                        // 2. Hechas:Solo contamos si hay salida.
-                        if (r && !esFeriado) {
+                        if (r && !esFeriado && !esAusencia) {
                             if (r.salida) {
                                 horasHechasDia = r.total;
                             }
@@ -2420,6 +2432,7 @@
                     progressEl.classList.remove('blue', 'green', 'red');
                     progressEl.classList.add(status);
                 }
+                // REEMPLAZAR TODA LA FUNCIÓN actualizarListaRegistros POR ESTA:
                 function actualizarListaRegistros(registros) {
                     const lista = $('lista-registros');
                     const btnCargarMas = $('btn-cargar-mas');
@@ -2459,24 +2472,50 @@
                             const hoy = obtenerFechaHoy();
                             item.className = r.fecha === hoy ? 'registro-item hoy' : 'registro-item';
                             item.onclick = () => D.editarRegistro(r.id);
+
                             const info = document.createElement('div');
                             info.className = 'registro-info';
+
+                            // --- AQUI ESTA LA LOGICA NUEVA DE AUSENCIA ---
                             const isFeriadoContabilizado = r.entrada === '00:00' && r.salida === '00:00';
+                            const isAusencia = r.entrada === '11:11' && r.salida === '11:11';
+
                             const fechaEl = document.createElement('div');
                             fechaEl.className = 'registro-fecha';
-                            fechaEl.textContent = `${obtenerNombreDia(r.fecha)} ${r.fecha.substring(8)}${isFeriadoContabilizado ? ' 🥳 (Feriado)' : ''}`;
+
+                            // Definir etiqueta segun el tipo
+                            let etiqueta = '';
+                            if (isFeriadoContabilizado) etiqueta = ' 🥳 (Feriado)';
+                            else if (isAusencia) etiqueta = ' ✈️ (Ausencia)';
+
+                            fechaEl.textContent = `${obtenerNombreDia(r.fecha)} ${r.fecha.substring(8)}${etiqueta}`;
+
                             const tfText = r.tiempoFuera && r.tiempoFuera !== '' ? ` (${r.tiempoFuera} Fuera)` : '';
+
                             const horasEl = document.createElement('div');
                             horasEl.className = 'registro-horas';
-                            horasEl.textContent = isFeriadoContabilizado ? 'Día no laboral' : `${r.entrada || '-'} → ${r.salida || '-'}${tfText}`;
+
+                            // Definir texto de horas segun tipo
+                            if (isFeriadoContabilizado) {
+                                horasEl.textContent = 'Día no laboral';
+                            } else if (isAusencia) {
+                                horasEl.textContent = 'Licencia / Ausencia';
+                            } else {
+                                horasEl.textContent = `${r.entrada || '-'} → ${r.salida || '-'}${tfText}`;
+                            }
+
                             const totalEl = document.createElement('div');
                             totalEl.className = 'registro-total';
                             let totalText = 'Incompleto';
-                            totalEl.classList.remove('green-text', 'red-text');
+                            totalEl.classList.remove('green-text', 'red-text', 'purple-text'); // Limpiamos clases
 
                             if (isFeriadoContabilizado) {
                                 totalText = 'Horas descontadas';
-                                totalEl.classList.add('green-text');
+                                totalEl.classList.add('purple-text');
+                            } else if (isAusencia) {
+                                // LOGICA VISUAL DE AUSENCIA
+                                totalText = 'Justificado';
+                                totalEl.classList.add('purple-text');
                             } else if (r.entrada && r.salida) {
                                 totalText = `${r.horas}h ${r.minutos}m`;
                                 const diffText = formatoDiferencia(r.total);
@@ -2552,7 +2591,10 @@
                         tituloEl.innerHTML = `<svg class="icon"><use href="#icon-calendar-simple" /></svg> Esta Semana`;
 
                         const tot = registros.filter(r =>
-                            r.fecha >= ini && r.fecha <= fn && !(r.entrada === '00:00' && r.salida === '00:00')
+                            r.fecha >= ini &&
+                            r.fecha <= fn &&
+                            !(r.entrada === '00:00' && r.salida === '00:00') && // Ignorar Feriados
+                            !(r.entrada === '11:11' && r.salida === '11:11')    // Ignorar Ausencias (NUEVO)
                         ).reduce((s, r) => s + r.total, 0);
 
                         const horasDescontar = D.calcularHorasFeriadoEnRango(ini, fn);
@@ -2600,15 +2642,27 @@
 
                         if (regHoy && regHoy.entrada) {
                             const isFeriadoHoy = regHoy.entrada === '00:00' && regHoy.salida === '00:00';
+                            // 1. Detectamos si es Ausencia
+                            const isAusenciaHoy = regHoy.entrada === '11:11' && regHoy.salida === '11:11';
 
                             if (isFeriadoHoy) {
                                 if (statsEl) statsEl.innerHTML = `<div>🥳 Feriado</div>`;
                                 if (progressEl) {
                                     progressEl.style.width = '100%';
-                                    setProgressBarColor(progressEl, 'green');
+                                    setProgressBarColor(progressEl, 'purple');
                                 }
                                 if (mensajeEl) mensajeEl.textContent = `¡Día no laboral!`;
+
+                            } else if (isAusenciaHoy) {
+                                if (statsEl) statsEl.innerHTML = `<div>✈️ Ausencia</div>`;
+                                if (progressEl) {
+                                    progressEl.style.width = '100%';
+                                    setProgressBarColor(progressEl, 'purple'); // color de barra por ausencia
+                                }
+                                if (mensajeEl) mensajeEl.textContent = `¡Día justificado!`;
+
                             } else {
+                                // Lógica normal de trabajo (horas reales)
                                 if (regHoy.salida) {
                                     tiempoTranscurrido = regHoy.total;
                                 } else {
@@ -2621,7 +2675,10 @@
                                 const prog = objetivoDiario > 0 ? Math.min((tiempoTranscurrido / objetivoDiario) * 100, 100) : 100;
 
                                 if (statsEl) statsEl.innerHTML = `<div>${horasATexto(tiempoTranscurrido)}</div>`;
-                                if (progressEl) progressEl.style.width = prog + '%';
+                                if (progressEl) {
+                                    progressEl.style.width = prog + '%';
+                                    progressEl.style.backgroundColor = '';
+                                }
 
                                 if (regHoy.salida) {
                                     setProgressBarColor(progressEl, tiempoTranscurrido >= objetivoDiario ? 'green' : 'red');
@@ -2855,3 +2912,14 @@
 </body>
 
 </html>
+
+<!--// ====================================================================
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.69
+    // ====================================================================
+    - 1) Cambiadas las etiquetas "fecha desde" y "fecha hasta" por "Desde" 
+    y "Hasta" en los campos para filtrar por fecha
+    - 2) Cambiadas las etiquetas "hora de entrada" y "hora de salida" por
+    "Entrada" y "Salida"
+    - 3) cambios de color en la barra de progreso por ausencia y feriado
+    (progressel)
+-->
