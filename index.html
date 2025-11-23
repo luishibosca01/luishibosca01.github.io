@@ -258,7 +258,7 @@
         button:hover {
             transform: scale(1.02);
         }
-
+        
         button:active {
             transform: scale(1);
         }
@@ -271,11 +271,11 @@
         }
 
         /* Variantes de botones */
+        .btn-clean,
         .btn-delete {
             background: var(--c-red);
         }
 
-        .btn-clean,
         .btn-export {
             background: var(--c-green);
         }
@@ -427,6 +427,10 @@
 
         .registro-item:hover {
             transform: scale(1.02);
+        }
+
+        .registro-item:active {
+            transform: scale(1);
         }
 
         .registro-item.hoy {
@@ -645,12 +649,6 @@
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" class="icon-line" stroke="currentColor">
             </path>
         </symbol>
-        <symbol id="icon-calendar" viewBox="0 0 24 24">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
-            <line x1="16" y1="2" x2="16" y2="6" class="icon-line" stroke="currentColor"></line>
-            <line x1="8" y1="2" x2="8" y2="6" class="icon-line" stroke="currentColor"></line>
-            <line x1="3" y1="10" x2="21" y2="10" class="icon-line" stroke="currentColor"></line>
-        </symbol>
         <symbol id="icon-list" viewBox="0 0 24 24">
             <line x1="8" y1="6" x2="21" y2="6" class="icon-line" stroke="currentColor"></line>
             <line x1="8" y1="12" x2="21" y2="12" class="icon-line" stroke="currentColor"></line>
@@ -671,27 +669,11 @@
             <path d="M21 7v6h-6" class="icon-line" stroke="currentColor"></path>
             <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13" class="icon-line" stroke="currentColor"></path>
         </symbol>
-        <symbol id="icon-clock-simple" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" class="icon-line" stroke="currentColor"></circle>
-            <polyline points="12 6 12 12 16 14" class="icon-line" stroke="currentColor"></polyline>
-        </symbol>
         <symbol id="icon-calendar-simple" viewBox="0 0 24 24">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
             <line x1="16" y1="2" x2="16" y2="6" class="icon-line" stroke="currentColor"></line>
             <line x1="8" y1="2" x2="8" y2="6" class="icon-line" stroke="currentColor"></line>
             <line x1="3" y1="10" x2="21" y2="10" class="icon-line" stroke="currentColor"></line>
-        </symbol>
-        <symbol id="icon-timer" viewBox="0 0 24 24">
-            <line x1="10" y1="2" x2="14" y2="2" class="icon-line" stroke="currentColor"></line>
-            <line x1="12" y1="14" x2="15" y2="11" class="icon-line" stroke="currentColor"></line>
-            <circle cx="12" cy="14" r="8" class="icon-line" stroke="currentColor"></circle>
-        </symbol>
-        <symbol id="icon-calendar-check" viewBox="0 0 24 24">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
-            <line x1="16" y1="2" x2="16" y2="6" class="icon-line" stroke="currentColor"></line>
-            <line x1="8" y1="2" x2="8" y2="6" class="icon-line" stroke="currentColor"></line>
-            <line x1="3" y1="10" x2="21" y2="10" class="icon-line" stroke="currentColor"></line>
-            <path d="M9 16l2 2 4-4" class="icon-line" stroke="currentColor"></path>
         </symbol>
         <symbol id="icon-filter" viewBox="0 0 24 24">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" class="icon-line" stroke="currentColor">
@@ -724,7 +706,7 @@
         <div class="left-column">
             <div class="card stats-card animated-card" id="stats-card" onclick="UILogic.alternarVista()"
                 style="animation-delay: 0s;">
-                <h2 id="stats-titulo">📅 Hoy</h2>
+                <h2 id="stats-titulo">Hoy</h2>
                 <div class="stats-number" id="stats-semana">
                     <div>0 horas 0 minutos</div>
                 </div>
@@ -748,8 +730,8 @@
                 <div class="form-group">
                     <label>Entrada</label>
                     <div class="input-with-btn">
-                        <input type="text" id="entrada" inputmode="numeric" placeholder="00:00 para Feriado"
-                            maxlength="5" />
+                        <input type="text" id="entrada" inputmode="numeric"
+                            placeholder="00:00 (Feriado) 11:11 (ausencia)" maxlength="5" />
                         <button class="time-btn" onclick="UILogic.pegarHoraActual('entrada')"><svg class="icon">
                                 <use href="#icon-clock" />
                             </svg></button>
@@ -762,8 +744,8 @@
                 <div class="form-group">
                     <label>Salida</label>
                     <div class="input-with-btn">
-                        <input type="text" id="salida" inputmode="numeric" placeholder="00:00 para Feriado"
-                            maxlength="5" />
+                        <input type="text" id="salida" inputmode="numeric"
+                            placeholder="00:00 (Feriado) 11:11 (ausencia)" maxlength="5" />
                         <button class="time-btn" onclick="UILogic.pegarHoraActual('salida')"><svg class="icon">
                                 <use href="#icon-clock" />
                             </svg></button>
@@ -822,7 +804,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.71</span> <!-- Version -->
+                <span class="version-text">v5.73</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -879,7 +861,8 @@
             <div class="form-group">
                 <label>Entrada</label>
                 <div class="input-with-btn">
-                    <input type="text" id="edit-entrada" inputmode="numeric" placeholder="HH:MM" maxlength="5" />
+                    <input type="text" id="edit-entrada" inputmode="numeric"
+                        placeholder="00:00 (Feriado) 11:11 (ausencia)" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
                             <use href="#icon-clock" />
                         </svg></button>
@@ -891,7 +874,8 @@
             <div class="form-group">
                 <label>Salida</label>
                 <div class="input-with-btn">
-                    <input type="text" id="edit-salida" inputmode="numeric" placeholder="HH:MM" maxlength="5" />
+                    <input type="text" id="edit-salida" inputmode="numeric"
+                        placeholder="00:00 (Feriado) 11:11 (ausencia)" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-salida')"><svg class="icon">
                             <use href="#icon-clock" />
                         </svg></button>
@@ -973,14 +957,14 @@
                     Filtrar Histórico
                 </span>
             </h3>
-                <div class="form-group">
-                    <label>Desde</label>
-                    <input type="date" id="filtro-fecha-desde" />
-                </div>
-                <div class="form-group">
-                    <label>Hasta</label>
-                    <input type="date" id="filtro-fecha-hasta" />
-                </div>
+            <div class="form-group">
+                <label>Desde</label>
+                <input type="date" id="filtro-fecha-desde" />
+            </div>
+            <div class="form-group">
+                <label>Hasta</label>
+                <input type="date" id="filtro-fecha-hasta" />
+            </div>
             <div class="btn-group">
                 <button class="btn-edit" onclick="DataManagement.aplicarFiltros()">
                     <svg class="icon">
@@ -2374,7 +2358,7 @@
 
                     } else {
                         // VISTA DIARIA
-                        tituloEl.innerHTML = `<svg class="icon"><use href="#icon-clock-simple" /></svg> Hoy`;
+                        tituloEl.innerHTML = `<svg class="icon"><use href="#icon-clock" /></svg> Hoy`;
                         const regHoy = registros.find(r => r.fecha === hoy);
                         let tiempoTranscurrido = 0;
                         let objetivoDiario = horasDiarias;
@@ -2590,6 +2574,30 @@
                         if (el) el.addEventListener('input', formatearInput);
                     });
 
+                    // 1. Configurar navegación con ENTER en Entrada -> Salida
+                    const inputEntrada = $('entrada');
+                    const inputSalida = $('salida');
+                    const btnAgregar = $('btn-agregar');
+
+                    if (inputEntrada && inputSalida) {
+                        inputEntrada.addEventListener('keydown', function (e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault(); // Evita que el formulario se envíe o haga cosas raras
+                                inputSalida.focus(); // Mueve el cursor al siguiente campo
+                            }
+                        });
+                    }
+
+                    // 2. Configurar acción con ENTER en Salida -> Registrar
+                    if (inputSalida && btnAgregar) {
+                        inputSalida.addEventListener('keydown', function (e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                btnAgregar.click(); // Simula un clic en el botón Registrar
+                            }
+                        });
+                    }
+
                     window.UILogic = {
                         alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
                         cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
@@ -2653,7 +2661,8 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.71
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.73
     // ====================================================================
-    1) Se simplificó el css completo, reduciendo la cantidad de lineas de codigo
+    1) agregado salto con tecla enter de entrada >> salida >> registrar
+    2) se agrega scale(1) a registro-item:active
     -->
