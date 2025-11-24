@@ -7,7 +7,7 @@
 
     <!-- Políticas de Seguridad -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
-                 script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
+                 script-src 'self' 'unsafe-inline'; 
                  style-src 'self' 'unsafe-inline'; 
                  img-src 'self' data: https:; 
                  font-src 'self' data:; 
@@ -740,8 +740,7 @@
                 <div class="form-group">
                     <label>Entrada</label>
                     <div class="input-with-btn">
-                        <input type="text" id="entrada" inputmode="numeric"
-                            placeholder="00:00 (Feriado) 11:11 (ausencia)" maxlength="5" />
+                        <input type="text" id="entrada" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
                         <button class="time-btn" onclick="UILogic.pegarHoraActual('entrada')"><svg class="icon">
                                 <use href="#icon-clock" />
                             </svg></button>
@@ -754,8 +753,7 @@
                 <div class="form-group">
                     <label>Salida</label>
                     <div class="input-with-btn">
-                        <input type="text" id="salida" inputmode="numeric"
-                            placeholder="00:00 (Feriado) 11:11 (ausencia)" maxlength="5" />
+                        <input type="text" id="salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
                         <button class="time-btn" onclick="UILogic.pegarHoraActual('salida')"><svg class="icon">
                                 <use href="#icon-clock" />
                             </svg></button>
@@ -814,7 +812,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.74</span> <!-- Version -->
+                <span class="version-text">v5.75</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -871,8 +869,7 @@
             <div class="form-group">
                 <label>Entrada</label>
                 <div class="input-with-btn">
-                    <input type="text" id="edit-entrada" inputmode="numeric"
-                        placeholder="00:00 (Feriado) 11:11 (ausencia)" maxlength="5" />
+                    <input type="text" id="edit-entrada" inputmode="numeric" placeholder="hh:mm"" maxlength=" 5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
                             <use href="#icon-clock" />
                         </svg></button>
@@ -884,8 +881,7 @@
             <div class="form-group">
                 <label>Salida</label>
                 <div class="input-with-btn">
-                    <input type="text" id="edit-salida" inputmode="numeric"
-                        placeholder="00:00 (Feriado) 11:11 (ausencia)" maxlength="5" />
+                    <input type="text" id="edit-salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-salida')"><svg class="icon">
                             <use href="#icon-clock" />
                         </svg></button>
@@ -1008,9 +1004,10 @@
                 style="text-align: left; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; max-height: 400px; overflow-y: auto;">
                 <p><strong><svg class="icon">
                             <use href="#icon-save" />
-                        </svg> Registrar Horas:</strong> Podes ingresar una hora de entrada y registrar, y luego mas tarde
-                        podes registrar la salida, directamente desde el cuadro "registrar", o editando el registro en el
-                        historico.</p>
+                        </svg> Registrar Horas:</strong> Podes ingresar una hora de entrada y registrar, y luego mas
+                    tarde
+                    podes registrar la salida, directamente desde el cuadro "registrar", o editando el registro en el
+                    historico.</p>
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
                 <p><strong>🥳 Feriados:</strong> Ingresa <code>00:00</code> en Entrada y Salida.</p>
                 <p><strong>✈️ Ausencias/Licencias:</strong> Ingresa <code>11:11</code> en Entrada y Salida (no cuentan
@@ -1019,9 +1016,11 @@
                 <p><strong>☕ Tiempo Fuera:</strong> Para descontar tiempo del dia, si saliste por algun motivo,
                     (por ejemplo, irse al medico).</p>
                 <p><strong><svg class="icon">
-                        <use href="#icon-clock" />
-                    </svg> Vistas:</strong> Toca la tarjeta de "Hoy" para ver el progreso de la "Semana".</p>
-                <p><strong><svg class="icon"><use href="#icon-save" /></svg> Datos:</strong> 
+                            <use href="#icon-clock" />
+                        </svg> Vistas:</strong> Toca la tarjeta de "Hoy" para ver el progreso de la "Semana".</p>
+                <p><strong><svg class="icon">
+                            <use href="#icon-save" />
+                        </svg> Datos:</strong>
                     La configuracion y registro de la pagina usa localStorage, lo que guarda los
                     datos de forma local en el navegador, Usa "Exportar" en Configuración para hacer
                     copias de seguridad e importar para combinar o reemplazar los registros.</p>
@@ -1191,7 +1190,19 @@
 
                 // Función auxiliar para copia profunda segura
                 function deepClone(obj) {
-                    return JSON.parse(JSON.stringify(obj));
+                    // Manejo de errores y casos edge
+                    try {
+                        if (obj === null || obj === undefined) {
+                            return obj;
+                        }
+                        return JSON.parse(JSON.stringify(obj));
+                    } catch (e) {
+                        console.error('Error en deepClone:', e);
+                        // Retornar estructura vacía según tipo
+                        if (Array.isArray(obj)) return [];
+                        if (typeof obj === 'object') return {};
+                        return null;
+                    }
                 }
 
                 function saveState(registros) {
@@ -1225,7 +1236,7 @@
                         currentIndex--;
                         updateButtons();
                         const estado = deepClone(history[currentIndex]);
-                        console.log('Undo a index:', currentIndex);
+                        //console.log('Undo a index:', currentIndex);
                         return estado;
                     }
                     return null;
@@ -1377,13 +1388,19 @@
                         }
 
                         const v = localStorage.getItem('vistaActual');
+
+                        // Validación estricta de tipos
+                        const diasFinal = (!isNaN(d) && Number.isFinite(d) && d >= 1 && d <= 7) ? d : diasCalculados;
+                        const horasFinal = (Number.isFinite(hd) && hd >= 1 && hd <= 24) ? hd : 7;
+
                         return {
-                            diasHabiles: (!isNaN(d) && d >= 1 && d <= 7) ? d : diasCalculados,
-                            horasDiarias: (hd >= 1 && hd <= 24) ? hd : 7,
+                            diasHabiles: diasFinal,
+                            horasDiarias: horasFinal,
                             temaOscuro: t,
                             vistaActual: (v === 'semana' || v === 'diaria') ? v : 'diaria'
                         };
                     } catch (e) {
+                        console.error('Error cargando configuración:', e);
                         return { diasHabiles: 5, horasDiarias: 7, temaOscuro: true, vistaActual: 'diaria' };
                     }
                 }
@@ -1411,7 +1428,22 @@
                     const [hE, mE] = e.split(':').map(Number);
                     const [hS, mS] = s.split(':').map(Number);
 
-                    let minTotal = (hS * 60 + mS) - (hE * 60 + mE);
+                    // Validar overflow antes de cálculos
+                    if (!Number.isFinite(hE) || !Number.isFinite(mE) ||
+                        !Number.isFinite(hS) || !Number.isFinite(mS)) {
+                        return null;
+                    }
+
+                    const minutosEntrada = hE * 60 + mE;
+                    const minutosSalida = hS * 60 + mS;
+
+                    // Validar rangos (máximo 24 horas = 1440 minutos)
+                    if (minutosEntrada > 1440 || minutosSalida > 1440 ||
+                        minutosEntrada < 0 || minutosSalida < 0) {
+                        return null;
+                    }
+
+                    let minTotal = minutosSalida - minutosEntrada;
 
                     if (minTotal < 0) minTotal += 24 * 60;
 
@@ -1758,8 +1790,8 @@
                         return;
                     }
 
-                    //Validar tipo MIME
-                    if (file.type && file.type !== 'application/json') {
+                    // Validación estricta de MIME
+                    if (!file.type || file.type !== 'application/json') {
                         UILogic.mostrarToast('Solo se permiten archivos JSON', 'error');
                         return;
                     }
@@ -1771,6 +1803,12 @@
                             const contenido = e.target.result;
                             if (!contenido || contenido.trim().length === 0) {
                                 UILogic.mostrarToast('Archivo vacío', 'error');
+                                return;
+                            }
+
+                            // Validar tamaño del contenido antes de parsear
+                            if (contenido.length > S.SECURITY_LIMITS.MAX_JSON_SIZE) {
+                                UILogic.mostrarToast('Contenido del archivo demasiado grande', 'error');
                                 return;
                             }
 
@@ -1914,7 +1952,11 @@
                         try {
                             localStorage.setItem('diasHabiles', diasHabiles);
                             localStorage.setItem('horasDiarias', horasDiarias);
-                        } catch (ex) { }
+                        } catch (ex) {
+                            // Manejo explícito de errores
+                            console.error('Error guardando configuración:', ex);
+                            UILogic.mostrarToast('Datos importados pero configuración no guardada', 'warning');
+                        }
 
                         UILogic.mostrarToast(mensajeExito, 'success');
                         UILogic.cerrarImportar();
@@ -1923,7 +1965,19 @@
                 }
 
                 function calcularBufferSemanal(inicioSemana, fechaHoy) {
+                    const horasDiariasLocal = horasDiarias;
                     let buffer = 0;
+
+                    // Filtrar registros relevantes una sola vez
+                    const registrosRango = registros.filter(r =>
+                        r.fecha >= inicioSemana && r.fecha <= fechaHoy
+                    );
+
+                    // Crear Map para búsqueda O(1)
+                    const registrosMap = new Map(
+                        registrosRango.map(r => [r.fecha, r])
+                    );
+
                     let fechaIteracion = new Date(inicioSemana.replace(/-/g, '/') + ' 00:00:00');
                     let fechaLimite = new Date(fechaHoy.replace(/-/g, '/') + ' 00:00:00');
 
@@ -1942,7 +1996,8 @@
                             esDiaLaboralConfigurado = (numDia <= diasHabiles);
                         }
 
-                        const r = registros.find(reg => reg.fecha === isoDate);
+                        // Búsqueda O(1) en lugar de O(n)
+                        const r = registrosMap.get(isoDate);
                         let horasObjetivoDia = 0;
                         let horasHechasDia = 0;
 
@@ -1953,7 +2008,7 @@
                         const esDiaPasado = isoDate < fechaHoy;
 
                         if (esDiaLaboralConfigurado && !esFeriado && !esAusencia && (esDiaPasado || (isoDate === fechaHoy && tieneSalida))) {
-                            horasObjetivoDia = horasDiarias;
+                            horasObjetivoDia = horasDiariasLocal;
                         }
 
                         if (r && !esFeriado && !esAusencia) {
@@ -2188,8 +2243,24 @@
                 }
 
                 function agruparRegistrosPorMes(registros) {
+                    // Validar entrada
+                    if (!Array.isArray(registros)) {
+                        console.warn('agruparRegistrosPorMes: entrada inválida');
+                        return new Map();
+                    }
+
                     const grupos = new Map();
                     registros.forEach(r => {
+                        // Validar cada registro
+                        if (!r || typeof r !== 'object' || !r.fecha || typeof r.fecha !== 'string') {
+                            return;
+                        }
+
+                        // Validar longitud mínima
+                        if (r.fecha.length < 7) {
+                            return;
+                        }
+
                         const claveMes = r.fecha.substring(0, 7);
                         if (!grupos.has(claveMes)) {
                             grupos.set(claveMes, []);
@@ -2708,7 +2779,7 @@
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('./sw.js') //RUTA DEL SERVICE WORKER
                     .then(function (registration) {
-                        console.log('ServiceWorker registrado con éxito: ', registration.scope);
+                        //console.log('ServiceWorker registrado con éxito: ', registration.scope);
                     }, function (err) {
                         console.log('ServiceWorker falló: ', err);
                     });
@@ -2720,8 +2791,7 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.74
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.75
     // ====================================================================
-    1) Agregado boton de ayuda en el header, con informacion e instrucciones 
-    de uso
+    1) varias mejoras de seguridad en general por IA
     -->
