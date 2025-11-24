@@ -343,7 +343,7 @@
             /* --- este ultimo en desuso --- */
             display: flex;
             gap: 0.5rem;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
         }
 
         .config-actions {
@@ -728,11 +728,6 @@
                     <use href="#icon-moon" />
                 </svg>
             </button>
-            <button class="icon-btn" onclick="UILogic.mostrarAyuda()">
-                <svg class="icon">
-                    <use href="#icon-help" />
-                </svg>
-            </button>
             <button class="icon-btn" onclick="UILogic.mostrarConfig()">
                 <svg class="icon">
                     <use href="#icon-settings" />
@@ -840,16 +835,16 @@
                 </h2>
                 <div class="stats-grid">
                     <div class="stat-item">
+                        <div class="stat-label">Días trabajados</div>
+                        <div class="stat-value" id="stat-dias-trabajados">0</div>
+                    </div>
+                    <div class="stat-item">
                         <div class="stat-label">Entrada promedio</div>
                         <div class="stat-value" id="stat-entrada-promedio">--:--</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Salida promedio</div>
                         <div class="stat-value" id="stat-salida-promedio">--:--</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Días trabajados</div>
-                        <div class="stat-value" id="stat-dias-trabajados">0</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Promedio diario</div>
@@ -869,7 +864,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.76</span> <!-- Version -->
+                <span class="version-text">v5.75</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -898,6 +893,10 @@
                 <button class="btn-delete" onclick="DataManagement.borrarTodoHistorial()"><svg class="icon">
                         <use href="#icon-trash" />
                     </svg>Borrar registros</button>
+                <button class="btn-group" onclick="UILogic.mostrarAyuda()"><svg class="icon">
+                        <use href="#icon-help" />
+                    </svg>Mostrar Ayuda
+                </button>
             </div>
             <div class="btn-group">
                 <button onclick="DataManagement.guardarConfig()"><svg class="icon">
