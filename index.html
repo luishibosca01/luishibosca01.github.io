@@ -732,6 +732,14 @@
             <line x1="12" y1="20" x2="12" y2="4" class="icon-line" stroke="currentColor"></line>
             <line x1="6" y1="20" x2="6" y2="14" class="icon-line" stroke="currentColor"></line>
         </symbol>
+        <symbol id="icon-merge" viewBox="0 0 24 24">
+            <line x1="6" y1="6" x2="12" y2="12" class="icon-line" stroke="currentColor"></line>
+            <line x1="18" y1="6" x2="12" y2="12" class="icon-line" stroke="currentColor"></line>
+            <line x1="12" y1="12" x2="12" y2="18" class="icon-line" stroke="currentColor"></line>
+            <circle cx="6" cy="6" r="2" fill="currentColor"></circle>
+            <circle cx="18" cy="6" r="2" fill="currentColor"></circle>
+            <circle cx="12" cy="18" r="2" fill="currentColor"></circle>
+        </symbol>
     </svg>
 
     <div class="header">
@@ -910,7 +918,7 @@
                     </svg>Borrar registros</button>
                 <button class="btn-group" onclick="UILogic.mostrarAyuda()"><svg class="icon">
                         <use href="#icon-help" />
-                    </svg>Mostrar Ayuda
+                    </svg>Información
                 </button>
             </div>
             <div class="btn-group">
@@ -1068,7 +1076,7 @@
                     <svg class="icon">
                         <use href="#icon-help" />
                     </svg>
-                    Instrucciones
+                    Información
                 </span>
             </h3>
             <div
@@ -3342,9 +3350,9 @@
                     const reporte = {
                         // --- ENCABEZADO ---
                         header: () => `
-╔═══════════════════════════════════════════════════════════╗
-║              REPORTE DE HORAS TRABAJADAS                   ║
-╚═══════════════════════════════════════════════════════════╝
+================================================================
+REPORTE DE HORAS TRABAJADAS                   
+================================================================
 
 📅 Período: ${nombreMes}
 📊 Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}
@@ -3360,6 +3368,7 @@
    • Días trabajados:        ${stats.diasTrabajados}
    • Feriados:               ${stats.feriados}
    • Ausencias:              ${stats.ausencias}
+   • Vacaciones:             ${stats.vacaciones}
    
    • Entrada promedio:       ${stats.entradaPromedio}
    • Salida promedio:        ${stats.salidaPromedio}
@@ -3389,6 +3398,7 @@
 
                                 const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
                                 const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+                                const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
 
                                 let linea = '';
 
@@ -3396,6 +3406,8 @@
                                     linea = `${dia.padEnd(10)} ${fecha}  FERIADO`;
                                 } else if (esAusencia) {
                                     linea = `${dia.padEnd(10)} ${fecha}  AUSENCIA`;
+                                } else if (esVacaciones) {
+                                    linea = `${dia.padEnd(10)} ${fecha}  VACACIONES`;
                                 } else {
                                     const entrada = r.entrada || '--:--';
                                     const salida = r.salida || '--:--';
@@ -3442,7 +3454,8 @@
                                     semanas.set(lunes, {
                                         trabajados: [],
                                         feriados: [],
-                                        ausencias: []
+                                        ausencias: [],
+                                        vacaciones: []
                                     });
                                 }
 
@@ -3452,6 +3465,8 @@
                                     semana.feriados.push(r);
                                 } else if (r.entrada === '11:11' && r.salida === '11:11') {
                                     semana.ausencias.push(r);
+                                } else if (r.entrada === '22:22' && r.salida === '22:22') {
+                                    semana.vacaciones.push(r);
                                 } else {
                                     semana.trabajados.push(r);
                                 }
@@ -3500,6 +3515,9 @@
                                 if (datos.ausencias.length > 0) {
                                     notasExtras.push(`${datos.ausencias.length} ausencia${datos.ausencias.length > 1 ? 's' : ''}`);
                                 }
+                                if (datos.vacaciones.length > 0) {
+                                    notasExtras.push(`${datos.vacaciones.length} vacación${datos.vacaciones.length > 1 ? 'es' : ''}`);
+                                }
 
                                 if (notasExtras.length > 0) {
                                     seccion += ` [${notasExtras.join(', ')}]`;
@@ -3514,7 +3532,7 @@
                         // --- TOTALES DEL MES ---
                         totalesMes: () => {
                             const totalHoras = registrosMes
-                                .filter(r => r.entrada !== '00:00' && r.entrada !== '11:11')
+                                .filter(r => r.entrada !== '00:00' && r.entrada !== '11:11' && r.entrada !== '22:22')
                                 .reduce((sum, r) => sum + r.total, 0);
 
                             const horasTotales = Math.floor(totalHoras);
@@ -3721,4 +3739,4 @@ Generado por Sistema de Horarios version v5.92
     // ====================================================================
     1) Agregado registro y borrado por lotes para dias especiales 
     (feriado, ausencia, vacaciones)
-    2) agregado dia especial "vacaiones" con 22:22 en todos los modulos
+    2) agregado dia especial "vacaciones" con 22:22 en todos los modulos
