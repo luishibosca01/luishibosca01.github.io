@@ -229,11 +229,16 @@
         }
 
         .input-with-btn,
-        .input-number-group,
-        .contenedor-fechas {
+        .input-number-group {
             display: flex;
             gap: 0.5rem;
             align-items: center;
+        }
+
+        .contenedor-fechas {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
         }
 
         .input-number-group input {
@@ -887,7 +892,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.92</span> <!-- Version -->
+                <span class="version-text">v5.93</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1389,14 +1394,31 @@
                     return `${timestamp}-${random1}${random2}`;
                 }
 
-                function calcularHashFNV1a(data) {
-                    const str = JSON.stringify(data);
-                    let hash = 0x811c9dc5;
-                    for (let i = 0; i < str.length; i++) {
-                        hash ^= str.charCodeAt(i);
-                        hash = Math.imul(hash, 0x01000193);
+                async function calcularHashSHA256(data) {
+                    const encoder = new TextEncoder();
+                    const dataBuffer = encoder.encode(JSON.stringify(data));
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+
+                function constantTimeCompare(a, b) {
+                    // Convertir a strings si no lo son
+                    const strA = String(a);
+                    const strB = String(b);
+
+                    // Si las longitudes son diferentes, aún hacemos la comparación completa
+                    // para evitar revelar información sobre la longitud
+                    const maxLength = Math.max(strA.length, strB.length);
+                    let result = strA.length === strB.length ? 0 : 1;
+
+                    for (let i = 0; i < maxLength; i++) {
+                        const charA = i < strA.length ? strA.charCodeAt(i) : 0;
+                        const charB = i < strB.length ? strB.charCodeAt(i) : 0;
+                        result |= charA ^ charB;
                     }
-                    return (hash >>> 0).toString(16);
+
+                    return result === 0;
                 }
 
                 function validarRegistroSeguro(r) {
@@ -1435,7 +1457,8 @@
                     validarFechaSegura,
                     validarHoraSegura,
                     generarIDSeguro,
-                    calcularHashFNV1a,
+                    calcularHashSHA256,
+                    constantTimeCompare,
                     validarRegistroSeguro
                 };
             })();
@@ -1562,14 +1585,36 @@
                 let filtroDesde = null;
                 let filtroHasta = null;
 
-                function cargarConVerificacion() {
+                async function cargarConVerificacion() {
                     try {
                         const stored = localStorage.getItem('registros');
                         if (!stored) return [];
                         const data = JSON.parse(stored);
+
                         if (data.hash) {
-                            const hashCalculado = S.calcularHashFNV1a(data.registros);
-                            if (hashCalculado !== data.hash) {
+                            const hashCalculado = await S.calcularHashSHA256(data.registros);
+
+                            // ✅ Usar comparación segura contra timing attacks
+                            if (!S.constantTimeCompare(hashCalculado, data.hash)) {
+                                
+                                // --- INICIO DEL PARCHE DE MIGRACIÓN SILENCIOSA ---
+                                // La versión Standard usa FNV1a (8 caracteres). La Secure usa SHA-256 (64 caracteres).
+                                // Si el hash guardado tiene longitud 8 (o es significativamente menor a 64), 
+                                // asumimos que es una actualización legítima de versión y permitimos la carga.
+                                if (data.hash.length < 64 && hashCalculado.length === 64) {
+                                    console.log('🔄 Migrando formato de seguridad (FNV1a -> SHA-256)...');
+                                    
+                                    // Truco: Programamos un guardado automático para dentro de 2 segundos.
+                                    // Esto sobrescribirá el hash viejo con el nuevo SHA-256 automáticamente.
+                                    setTimeout(async () => {
+                                       await guardarConIntegridad((data.registros || []).filter(S.validarRegistroSeguro));
+                                       console.log('✅ Migración de hash completada en segundo plano.');
+                                    }, 2000);
+
+                                    return (data.registros || []).filter(S.validarRegistroSeguro);
+                                }
+                                // --- FIN DEL PARCHE ---
+
                                 console.warn('⚠️ Integridad comprometida');
                                 UILogic.mostrarToast('Advertencia de integridad', 'warning');
                                 const continuar = confirm('⚠️ Los datos pueden haber sido modificados.\n\n¿Deseas cargarlos de todos modos?');
@@ -1585,9 +1630,37 @@
                         return [];
                     }
                 }
+                // >>>>> ESTA FUNCION DE HASH DEBE VOLVER DESPUES DE 2 SEMANAS <<<<<
+
+                /*async function cargarConVerificacion() {
+                    try {
+                        const stored = localStorage.getItem('registros');
+                        if (!stored) return [];
+                        const data = JSON.parse(stored);
+
+                        if (data.hash) {
+                            const hashCalculado = await S.calcularHashSHA256(data.registros);
+
+                            // ✅ Usar comparación segura contra timing attacks
+                            if (!S.constantTimeCompare(hashCalculado, data.hash)) {
+                                console.warn('⚠️ Integridad comprometida');
+                                UILogic.mostrarToast('Advertencia de integridad', 'warning');
+                                const continuar = confirm('⚠️ Los datos pueden haber sido modificados.\n\n¿Deseas cargarlos de todos modos?');
+                                if (!continuar) {
+                                    localStorage.removeItem('registros');
+                                    return [];
+                                }
+                            }
+                        }
+                        return (data.registros || []).filter(S.validarRegistroSeguro);
+                    } catch (e) {
+                        console.error('Error cargando:', e);
+                        return [];
+                    }
+                }*/
 
                 // Agregar esta función completa en DataManagement
-                function registrarVacaciones() {
+                async function registrarVacaciones() {
                     const desde = S.sanitizeString($('vacaciones-fecha-desde').value, 10);
                     const hasta = S.sanitizeString($('vacaciones-fecha-hasta').value, 10);
                     const tipo = $('vacaciones-tipo').value;
@@ -1668,7 +1741,7 @@
                         return (b.entrada || '').localeCompare(a.entrada || '');
                     });
 
-                    const saved = guardarYActualizar();
+                    const saved = await guardarYActualizar();
 
                     if (saved) {
                         HistoryManager.saveState(registros);
@@ -1682,7 +1755,7 @@
                     }
                 }
 
-                function borrarPeriodo() {
+                async function borrarPeriodo() {
                     const desde = S.sanitizeString($('vacaciones-fecha-desde').value, 10);
                     const hasta = S.sanitizeString($('vacaciones-fecha-hasta').value, 10);
                     const tipo = $('vacaciones-tipo').value;
@@ -1746,7 +1819,7 @@
                     // Eliminar registros
                     registros = registros.filter(r => !registrosAEliminar.includes(r));
 
-                    const saved = guardarYActualizar();
+                    const saved = await guardarYActualizar();
 
                     if (saved) {
                         HistoryManager.saveState(registros);
@@ -1759,14 +1832,19 @@
                     }
                 }
 
-                function guardarConIntegridad(regs) {
+                async function guardarConIntegridad(regs) {
                     if (!S.saveLimiter.canProceed()) {
                         UILogic.mostrarToast('Demasiadas operaciones, espera un momento', 'warning');
                         return false;
                     }
                     try {
-                        const hash = S.calcularHashFNV1a(regs);
-                        const data = { registros: regs, hash, timestamp: Date.now(), version: S.SECURITY_LIMITS.SCHEMA_VERSION };
+                        const hash = await S.calcularHashSHA256(regs);  // ← Ahora es async
+                        const data = {
+                            registros: regs,
+                            hash,
+                            timestamp: Date.now(),
+                            version: S.SECURITY_LIMITS.SCHEMA_VERSION
+                        };
                         const str = JSON.stringify(data);
                         const size = new Blob([str]).size;
                         if (size > S.SECURITY_LIMITS.MAX_JSON_SIZE) {
@@ -1784,10 +1862,10 @@
                     }
                 }
 
-                function guardarYActualizar(actualizarRegistros = true) {
+                async function guardarYActualizar(actualizarRegistros = true) {
                     let saveSuccessful = true;
                     if (actualizarRegistros) {
-                        saveSuccessful = guardarConIntegridad(registros);
+                        saveSuccessful = await guardarConIntegridad(registros);  // ← await
                     }
                     if (saveSuccessful) {
                         UILogic.actualizarUI();
@@ -1932,7 +2010,7 @@
                     }
                     return valido;
                 }
-                function agregarRegistro() {
+                async function agregarRegistro() {
                     if (!validarFormulario()) {
                         UILogic.mostrarToast('Verifica los campos', 'error');
                         return;
@@ -1987,7 +2065,7 @@
 
                         HistoryManager.saveState(registros);
 
-                        const saved = guardarYActualizar();
+                        const saved = await guardarYActualizar();
                         if (saved) {
                             UILogic.mostrarToast(`✅ Salida ${s} agregada \n(entrada: ${registroExistente.entrada})`, 'success');
                             UILogic.resetearBoton(btn);
@@ -2030,7 +2108,7 @@
 
                     HistoryManager.saveState(registros);
 
-                    const saved = guardarYActualizar();
+                    const saved = await guardarYActualizar();
                     if (saved) {
                         UILogic.mostrarToast('Registro agregado', 'success');
                         UILogic.resetearBoton(btn);
@@ -2042,7 +2120,7 @@
                     }
                 }
 
-                function eliminarRegistroActual() {
+                async function eliminarRegistroActual() {
                     if (editandoId && confirm('¿Eliminar este registro?')) {
                         const modal = $('modal-editar');
                         const btnEliminar = modal.querySelector('.btn-delete');
@@ -2051,7 +2129,7 @@
                         registros = registros.filter(r => r.id !== editandoId);
                         HistoryManager.saveState(registros);
 
-                        const saved = guardarYActualizar();
+                        const saved = await guardarYActualizar();
                         btnEliminar.disabled = false;
                         btnEliminar.innerHTML = '<svg class="icon"><use href="#icon-trash"/></svg> Eliminar';
 
@@ -2073,7 +2151,7 @@
                     $('edit-tiempo-fuera').value = r.tiempoFuera || '';
                     $('modal-editar').classList.add('show');
                 }
-                function guardarEdicion() {
+                async function guardarEdicion() {
                     const r = registros.find(x => x.id === editandoId);
                     if (!r) return;
 
@@ -2121,7 +2199,7 @@
 
                     HistoryManager.saveState(registros);
 
-                    const saved = guardarYActualizar();
+                    const saved = await guardarYActualizar();
 
                     if (saved) {
                         UILogic.mostrarToast('Registro actualizado', 'success');
@@ -2170,7 +2248,7 @@
                     UILogic.cerrarConfig();
                 }
 
-                function borrarTodoHistorial() {
+                async function borrarTodoHistorial() {
                     const totalRegistros = registros.length;
                     if (totalRegistros === 0) {
                         UILogic.mostrarToast('No hay registros para borrar', 'info');
@@ -2188,7 +2266,7 @@
 
                     HistoryManager.saveState(registros);
 
-                    if (guardarConIntegridad(registros)) {
+                    if (await guardarConIntegridad(registros)) {
                         UILogic.actualizarUI();
                         UILogic.mostrarToast(`${totalRegistros} registros eliminados`, 'success');
                         UILogic.cerrarConfig();
@@ -2388,7 +2466,7 @@
                     reader.readAsText(file);
                 }
 
-                function finalizarImportacionAndSave(mensajeExito) {
+                async function finalizarImportacionAndSave(mensajeExito) {
                     registros.sort((a, b) => {
                         if (a.fecha !== b.fecha) return new Date(b.fecha) - new Date(a.fecha);
                         return (b.entrada || '').localeCompare(a.entrada || '');
@@ -2396,7 +2474,7 @@
 
                     HistoryManager.saveState(registros);
 
-                    if (guardarYActualizar()) {
+                    if (await guardarYActualizar()) {
                         try {
                             localStorage.setItem('diasHabiles', diasHabiles);
                             localStorage.setItem('horasDiarias', horasDiarias);
@@ -3343,6 +3421,14 @@
                         return aReg === año && mReg === mes;
                     });
 
+                    // Calcular total de horas del mes
+                    const totalHoras = registrosMes
+                        .filter(r => r.entrada !== '00:00' && r.entrada !== '11:11' && r.entrada !== '22:22')
+                        .reduce((sum, r) => sum + r.total, 0);
+
+                    const horasTotales = Math.floor(totalHoras);
+                    const minutosTotales = Math.round((totalHoras - horasTotales) * 60);
+
                     // ============================================
                     // ESTRUCTURA MODULAR DEL REPORTE
                     // ============================================
@@ -3357,13 +3443,13 @@ REPORTE DE HORAS TRABAJADAS
 📅 Período: ${nombreMes}
 📊 Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}
 
-────────────────────────────────────────────────────────────`,
+────────────────────────────────────────────────────────────────`,
 
-                        // --- RESUMEN GENERAL ---
+                        // --- RESUMEN GENERAL (AHORA INCLUYE TOTAL DEL MES) ---
                         resumenGeneral: () => `
 
 📈 RESUMEN GENERAL
-────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
 
    • Días trabajados:        ${stats.diasTrabajados}
    • Feriados:               ${stats.feriados}
@@ -3372,16 +3458,18 @@ REPORTE DE HORAS TRABAJADAS
    
    • Entrada promedio:       ${stats.entradaPromedio}
    • Salida promedio:        ${stats.salidaPromedio}
-   • Promedio diario:        ${stats.promedioDiario}`,
+   • Promedio diario:        ${stats.promedioDiario}
+   
+   • Total horas trabajadas: ${horasTotales}h ${minutosTotales}m (${totalHoras.toFixed(2)}h)`,
 
                         // --- DETALLE DIARIO ---
                         detalleDiario: () => {
                             let seccion = `
 
-────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
 
 📋 DETALLE DIARIO
-────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
 
 `;
 
@@ -3483,10 +3571,10 @@ REPORTE DE HORAS TRABAJADAS
 
                             let seccion = `
 
-────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
 
 📅 TOTALES POR SEMANA
-────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
 
 `;
 
@@ -3529,31 +3617,13 @@ REPORTE DE HORAS TRABAJADAS
                             return seccion;
                         },
 
-                        // --- TOTALES DEL MES ---
-                        totalesMes: () => {
-                            const totalHoras = registrosMes
-                                .filter(r => r.entrada !== '00:00' && r.entrada !== '11:11' && r.entrada !== '22:22')
-                                .reduce((sum, r) => sum + r.total, 0);
-
-                            const horasTotales = Math.floor(totalHoras);
-                            const minutosTotales = Math.round((totalHoras - horasTotales) * 60);
-
-                            return `
-────────────────────────────────────────────────────────────
-
-💼 TOTAL DEL MES
-────────────────────────────────────────────────────────────
-
-   • Total horas trabajadas:  ${horasTotales}h ${minutosTotales}m (${totalHoras.toFixed(2)}h)`;
-                        },
-
                         // --- CONFIGURACIÓN ---
                         configuracion: () => `
 
-────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
 
 ⚙️ CONFIGURACIÓN
-────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
 
    • Horas diarias:          ${D.horasDiarias()}
    • Días hábiles/semana:    ${D.diasHabiles()}
@@ -3562,9 +3632,9 @@ REPORTE DE HORAS TRABAJADAS
                         // --- FOOTER ---
                         footer: () => `
 
-────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
 
-Generado por Sistema de Horarios version v5.92
+Generado por Sistema de Horarios version v5.93
 `
                     };
 
@@ -3576,7 +3646,6 @@ Generado por Sistema de Horarios version v5.92
                         reporte.resumenGeneral() +
                         reporte.detalleDiario() +
                         reporte.totalesPorSemana() +
-                        reporte.totalesMes() +
                         reporte.configuracion() +
                         reporte.footer();
 
@@ -3605,7 +3674,7 @@ Generado por Sistema de Horarios version v5.92
                     $('modal-stats').classList.remove('show');
                 }
 
-                function init() {
+                async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
                         return;
@@ -3618,10 +3687,12 @@ Generado por Sistema de Horarios version v5.92
                     D.setDiasHabiles(config.diasHabiles);
                     D.setHorasDiarias(config.horasDiarias);
 
-                    D.registros().splice(0, D.registros().length, ...D.cargarConVerificacion());
+                    // ✅ Ahora con await porque cargarConVerificacion es async
+                    const registrosCargados = await D.cargarConVerificacion();
+                    D.registros().splice(0, D.registros().length, ...registrosCargados);
+
                     HistoryManager.saveState(D.registros());
                     HistoryManager.updateButtons();
-
 
 
                     if (localStorage.getItem('horasDiarias') === null) {
@@ -3718,15 +3789,79 @@ Generado por Sistema de Horarios version v5.92
         })();
     </script>
     <script>
-        // Registro del Service Worker para PWA despues del script principal //
+        // Registro del Service Worker para PWA con validación de integridad
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function () {
-                navigator.serviceWorker.register('./sw.js') //RUTA DEL SERVICE WORKER
-                    .then(function (registration) {
-                        //console.log('ServiceWorker registrado con éxito: ', registration.scope);
-                    }, function (err) {
-                        console.log('ServiceWorker falló: ', err);
+            window.addEventListener('load', async function () {
+                try {
+                    // 1. Verificar que el archivo existe y es válido
+                    const response = await fetch('./sw.js');
+
+                    if (!response.ok) {
+                        console.error('Service Worker no encontrado o inaccesible');
+                        return;
+                    }
+
+                    // 2. Leer el contenido
+                    const swContent = await response.text();
+
+                    // 3. Validaciones básicas de seguridad
+                    const validaciones = {
+                        tieneVersionCorrecta: swContent.includes('v5.92') || swContent.includes('v5'),
+                        noTieneEval: !swContent.includes('eval('),
+                        noTieneFunction: !swContent.includes('new Function('),
+                        tamanoRazonable: swContent.length > 100 && swContent.length < 50000,
+                        esJavaScript: response.headers.get('content-type')?.includes('javascript') ||
+                            response.headers.get('content-type')?.includes('text/plain')
+                    };
+
+                    // 4. Verificar que todas las validaciones pasen
+                    const todasValidas = Object.values(validaciones).every(v => v === true);
+
+                    if (!todasValidas) {
+                        console.error('❌ Service Worker falló validaciones de seguridad:', validaciones);
+
+                        // Mostrar advertencia al usuario
+                        if (window.UILogic) {
+                            UILogic.mostrarToast('⚠️ Service Worker no pasó validaciones de seguridad', 'warning');
+                        }
+                        return;
+                    }
+
+                    // 5. Calcular hash del Service Worker para monitoreo
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(swContent);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                    console.log('✅ Service Worker validado. Hash SHA-256:', hash.substring(0, 16) + '...');
+
+                    // 6. Guardar el hash para verificaciones futuras (opcional)
+                    const hashGuardado = localStorage.getItem('sw-hash');
+                    if (hashGuardado && hashGuardado !== hash) {
+                        console.warn('⚠️ El Service Worker ha cambiado desde la última vez');
+
+                        if (window.UILogic) {
+                            UILogic.mostrarToast('Service Worker actualizado', 'info');
+                        }
+                    }
+                    localStorage.setItem('sw-hash', hash);
+
+                    // 7. Registrar el Service Worker
+                    const registration = await navigator.serviceWorker.register('./sw.js');
+                    console.log('✅ ServiceWorker registrado con éxito:', registration.scope);
+
+                    // 8. Escuchar actualizaciones
+                    registration.addEventListener('updatefound', () => {
+                        console.log('🔄 Nueva versión del Service Worker detectada');
+                        if (window.UILogic) {
+                            UILogic.mostrarToast('Actualización disponible. Recarga la página.', 'info');
+                        }
                     });
+
+                } catch (err) {
+                    console.error('❌ Error en validación/registro de ServiceWorker:', err);
+                }
             });
         }
     </script>
@@ -3735,8 +3870,11 @@ Generado por Sistema de Horarios version v5.92
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.92
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.93
     // ====================================================================
-    1) Agregado registro y borrado por lotes para dias especiales 
-    (feriado, ausencia, vacaciones)
-    2) agregado dia especial "vacaciones" con 22:22 en todos los modulos
+    1) Se crea una funcion de compatibilidad para "async function cargarConVerificacion"
+    la cual debe ser removida dentro de una semana de hosteada, y descomentar la nueva.
+    Esto debido a que se cambió de hash utilizado a SHA256 y al momento de cargar los datos
+    antiguos, da error de integridad
+
+    -->
