@@ -2958,7 +2958,7 @@
                     totalEl.classList.remove('green-text', 'red-text', 'purple-text');
 
                     if (isFeriadoContabilizado) {
-                        totalText = 'Horas descontadas';
+                        totalText = 'Justificado';
                         totalEl.classList.add('purple-text');
                     } else if (isAusencia) {
                         totalText = 'Justificado';
@@ -3142,7 +3142,6 @@
                     grupo.registros.forEach(r => {
                         const item = crearItemRegistroIndividual(r, horasDiarias);
                         item.style.marginLeft = '1rem';
-                        item.style.borderLeft = '3px solid var(--c-purple)';
                         listaExpandible.appendChild(item);
                     });
 
