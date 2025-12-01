@@ -750,6 +750,35 @@
                 box-shadow: 0 0 0 0 rgba(192, 93, 118, 0);
             }
         }
+
+        /* Estilos para cabeceras colapsables */
+        .card-header-clickable {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .card-header-clickable:hover {
+            opacity: 0.8;
+            /* Pequeño feedback visual al pasar el mouse */
+        }
+
+        /* Animación de la flecha */
+        .chevron {
+            transition: transform 0.3s ease;
+            position: absolute;
+            /* CAMBIO: Saca la flecha del flujo normal */
+            right: 0;
+            /* CAMBIO: La pega al borde derecho */
+        }
+
+        .chevron.rotated {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 
@@ -895,6 +924,10 @@
             <line x1="10" y1="1" x2="10" y2="4" class="icon-line" stroke="currentColor"></line>
             <line x1="14" y1="1" x2="14" y2="4" class="icon-line" stroke="currentColor"></line>
         </symbol>
+        <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+            <polyline points="6 9 12 15 18 9" class="icon-line" stroke="currentColor" stroke-width="2" fill="none">
+            </polyline>
+        </symbol>
     </svg>
     <div class="header">
         <h1><svg class="icon">
@@ -941,25 +974,22 @@
             <div class="card animated-card" style="animation-delay: 0.1s;">
                 <h2 class="no-margin"
                     style="display: flex; justify-content: center; align-items: center; position: relative;">
+                    <button class="time-btn timer-btn" id="btn-timer-main" onclick="UILogic.toggleTimerBreakMain()"
+                        style="background: transparent; padding: 0.5rem; position: absolute; left: 0px; width: 44px; height: 44px; border-radius: 8px;">
+                        <svg class="icon">
+                            <use href="#icon-coffee" />
+                        </svg>
+                    </button>
                     <button onclick="DataManagement.agregarRegistro()" id="btn-agregar" class="btn-action-trigger">
                         <svg class="icon">
                             <use href="#icon-save" />
                         </svg> Registrar
                     </button>
-                    <button class="time-btn timer-btn" id="btn-timer-main" onclick="UILogic.toggleTimerBreakMain()"
-                        style="background: transparent; padding: 0.5rem; position: absolute; left: 0px; width: 44px; height: 44px; border-radius: 8px;">
-                        <svg class="icon">
-                            <use href="#icon-play" />
-                        </svg>
-                    </button>
-                    <button class="icon-btn collapse-toggle" id="btn-toggle-form" onclick="UILogic.toggleFormulario()"
-                        style="background: transparent; padding: 0.5rem; position: absolute; right: 0;">
-                        <svg class="icon" style="width: 1.2em; height: 1.2em;">
-                            <use href="#icon-plus" />
-                        </svg>
-                    </button>
+                    <svg class="icon chevron" id="icon-indicator-form" onclick="UILogic.toggleFormulario()"
+                        style="position: absolute; right: 0; cursor: pointer;">
+                        <use href="#icon-chevron-down" />
+                    </svg>
                 </h2>
-
                 <div class="form-collapsible" id="form-registro">
                     <div class="form-group">
                         <label>Fecha</label>
@@ -997,17 +1027,15 @@
                 </div>
             </div>
             <div class="card animated-card" style="animation-delay: 0.2s;">
-                <h2
-                    style="margin-bottom: 0; display: flex; justify-content: center; align-items: center; position: relative;">
-                    <svg class="icon">
-                        <use href="#icon-stats" />
-                    </svg> Estadísticas
-                    <button class="icon-btn collapse-toggle" id="btn-toggle-stats" onclick="UILogic.toggleStats()"
-                        style="background: transparent; padding: 0.5rem; position: absolute; right: 0; width: 44px; height: 44px;">
-                        <svg class="icon" style="width: 1.2em; height: 1.2em;">
-                            <use href="#icon-plus" />
-                        </svg>
-                    </button>
+                <h2 class="no-margin card-header-clickable" onclick="UILogic.toggleStats()">
+                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg class="icon">
+                            <use href="#icon-stats" />
+                        </svg> Estadísticas
+                    </span>
+                    <svg class="icon chevron" id="icon-indicator-stats">
+                        <use href="#icon-chevron-down" />
+                    </svg>
                 </h2>
                 <div class="form-collapsible" id="form-stats">
                     <div style="padding-top: 1rem;">
@@ -1059,18 +1087,15 @@
             </div>
         </div>
         <div class="card animated-card" style="animation-delay: 0.3s;">
-            <h2
-                style="margin-bottom: 0; display: flex; justify-content: center; align-items: center; position: relative;">
-                <svg class="icon">
-                    <use href="#icon-list" />
-                </svg> Histórico
-                <button class="icon-btn collapse-toggle" id="btn-toggle-historico"
-                    onclick="UILogic.toggleBotonesHistorico()"
-                    style="background: transparent; padding: 0.5rem; position: absolute; right: 0; width: 44px; height: 44px;">
-                    <svg class="icon" style="width: 1.2em; height: 1.2em;">
-                        <use href="#icon-plus" />
-                    </svg>
-                </button>
+            <h2 class="no-margin card-header-clickable" onclick="UILogic.toggleBotonesHistorico()">
+                <span style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg class="icon">
+                        <use href="#icon-list" />
+                    </svg> Histórico
+                </span>
+                <svg class="icon chevron" id="icon-indicator-historico">
+                    <use href="#icon-chevron-down" />
+                </svg>
             </h2>
             <div class="form-collapsible" id="botones-historico" style="margin-top: 0.5rem; margin-bottom: 1rem;">
                 <div
@@ -1110,7 +1135,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.11</span> <!-- Version -->
+                <span class="version-text">v6.12</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -4026,7 +4051,7 @@ REPORTE DE HORAS TRABAJADAS
 
 ────────────────────────────────────────────────────────────────
 
-Generado por Sistema de Horarios version v6.11
+Generado por Sistema de Horarios version v6.12
 `
                     };
 
@@ -4350,17 +4375,17 @@ Generado por Sistema de Horarios version v6.11
 
                 function toggleFormulario() {
                     const form = $('form-registro');
-                    const toggleBtn = $('btn-toggle-form');
-                    const icon = toggleBtn.querySelector('use');
+                    const icon = $('icon-indicator-form'); // Buscamos la nueva flecha por ID
 
                     form.classList.toggle('expanded');
-                    toggleBtn.classList.toggle('rotated');
 
-                    // Cambiar icono entre + y -
-                    if (form.classList.contains('expanded')) {
-                        icon.setAttribute('href', '#icon-cancelar');
-                    } else {
-                        icon.setAttribute('href', '#icon-plus');
+                    if (icon) {
+                        // Rotación simple, igual que en las otras tarjetas
+                        if (form.classList.contains('expanded')) {
+                            icon.classList.add('rotated');
+                        } else {
+                            icon.classList.remove('rotated');
+                        }
                     }
 
                     // Guardar estado en localStorage
@@ -4371,20 +4396,18 @@ Generado por Sistema de Horarios version v6.11
 
                 function toggleBotonesHistorico() {
                     const botones = $('botones-historico');
-                    const toggleBtn = $('btn-toggle-historico');
-                    const icon = toggleBtn.querySelector('use');
+                    const icon = $('icon-indicator-historico'); // Ahora buscamos la flecha
 
                     botones.classList.toggle('expanded');
-                    toggleBtn.classList.toggle('rotated');
 
-                    // Cambiar icono entre + y -
-                    if (botones.classList.contains('expanded')) {
-                        icon.setAttribute('href', '#icon-cancelar');
-                    } else {
-                        icon.setAttribute('href', '#icon-plus');
+                    if (icon) {
+                        if (botones.classList.contains('expanded')) {
+                            icon.classList.add('rotated');
+                        } else {
+                            icon.classList.remove('rotated');
+                        }
                     }
 
-                    // Guardar estado en localStorage
                     try {
                         localStorage.setItem('botonesHistoricoExpandido', botones.classList.contains('expanded'));
                     } catch (e) { }
@@ -4392,27 +4415,28 @@ Generado por Sistema de Horarios version v6.11
 
                 function toggleStats() {
                     const form = $('form-stats');
-                    const toggleBtn = $('btn-toggle-stats');
-                    const icon = toggleBtn.querySelector('use');
+                    const icon = $('icon-indicator-stats'); // Ahora buscamos la flecha
 
                     form.classList.toggle('expanded');
-                    toggleBtn.classList.toggle('rotated');
 
-                    if (form.classList.contains('expanded')) {
-                        icon.setAttribute('href', '#icon-cancelar');
-                        // Aseguramos que los datos estén actualizados al abrir
-                        poblarSelectorMeses();
-                        const selectMes = $('select-mes-stats');
-                        if (selectMes && selectMes.value) {
-                            actualizarEstadisticas(selectMes.value);
+                    // Rotamos la flecha simplemente agregando/quitando la clase
+                    if (icon) {
+                        if (form.classList.contains('expanded')) {
+                            icon.classList.add('rotated');
+
+                            // Lógica existente de recarga de datos...
+                            poblarSelectorMeses();
+                            const selectMes = $('select-mes-stats');
+                            if (selectMes && selectMes.value) {
+                                actualizarEstadisticas(selectMes.value);
+                            } else {
+                                actualizarEstadisticas();
+                            }
                         } else {
-                            actualizarEstadisticas();
+                            icon.classList.remove('rotated');
                         }
-                    } else {
-                        icon.setAttribute('href', '#icon-plus');
                     }
 
-                    // Guardar estado en localStorage
                     try {
                         localStorage.setItem('statsExpandido', form.classList.contains('expanded'));
                     } catch (e) { }
@@ -4514,7 +4538,7 @@ Generado por Sistema de Horarios version v6.11
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.11
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.12
     // ====================================================================
     <<< Se crea una funcion de compatibilidad para "async function cargarConVerificacion"
     la cual debe ser removida dentro de una semana de hosteada, y descomentar la nueva.
