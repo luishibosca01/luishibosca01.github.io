@@ -322,8 +322,9 @@
             color: var(--text-main);
         }
 
-        .btn-action-trigger:hover {
-            transform: scale(1.05);
+        .btn-action-trigger .icon {
+            animation: llamarAtencion 5s ease-in-out 1.2s 2;
+            transform-origin: bottom;
         }
 
         .icon-btn,
@@ -583,6 +584,50 @@
             }
         }
 
+        @keyframes llamarAtencion {
+            0% {
+                transform: scale(1, 1);
+            }
+
+            5% {
+                transform: scale(1.25, 0.75);
+            }
+
+            /* Se aplasta */
+            10% {
+                transform: scale(0.75, 1.25);
+            }
+
+            /* Se estira */
+            15% {
+                transform: scale(1.15, 0.85);
+            }
+
+            /* Rebote suave */
+            20% {
+                transform: scale(1, 1);
+            }
+
+            /* Normal */
+
+            100% {
+                transform: scale(1, 1);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                overflow: hidden;
+            }
+
+            to {
+                opacity: 1;
+                max-height: 1000px;
+            }
+        }
+
         .animated-card {
             animation: zoomIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
         }
@@ -625,19 +670,6 @@
         .registro-grupo-detalle {
             margin-top: 0.5rem;
             animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                max-height: 0;
-                overflow: hidden;
-            }
-
-            to {
-                opacity: 1;
-                max-height: 1000px;
-            }
         }
 
         .registro-grupo-detalle .registro-item {
