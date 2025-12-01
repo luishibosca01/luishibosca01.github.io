@@ -387,7 +387,11 @@
             transition: transform 0.3s;
         }
 
-
+        /* --- Efecto Timer en Tarjeta Principal --- */
+        .stats-card.timer-running {
+            border: 1px solid var(--c-red);
+            animation: pulse-card 2s infinite;
+        }
 
         .stats-number {
             font-size: 1.8rem;
@@ -640,6 +644,22 @@
                 background-color: var(--input-bg);
                 transform: scale(1);
                 box-shadow: none;
+            }
+        }
+
+        /* Animación de pulso específica para la tarjeta (más suave) */
+        @keyframes pulse-card {
+            0% {
+                box-shadow: 0 0 0 0 rgba(192, 93, 118, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(192, 93, 118, 0);
+                /* Expansión de la sombra */
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(192, 93, 118, 0);
             }
         }
 
@@ -4215,31 +4235,23 @@ Generado por Sistema de Horarios version v6.14
                     actualizarEstadoBotonTimer();
                 }
 
-                // ... después de la función toggleTimerBreak() ...
-
-                // --- NUEVAS FUNCIONES PARA EL BOTÓN PRINCIPAL ---
                 function actualizarEstadoBotonTimerMain() {
                     const btn = document.getElementById('btn-timer-main');
+                    const card = document.getElementById('stats-card'); // <--- 1. REFERENCIA A LA TARJETA
                     if (!btn) return;
 
                     const hoy = obtenerFechaHoy();
-                    // Buscamos el objeto del registro completo para ver sus datos
                     const registroHoy = D.registros().find(r => r.fecha === hoy);
                     const isRunning = localStorage.getItem('breakStartTime') !== null;
                     const icon = btn.querySelector('use');
 
-                    // Verificamos si existe y si ya tiene salida marcada (es decir, día cerrado)
-                    // Consideramos "cerrado" si la propiedad salida existe y no está vacía
+                    // ... (lógica de bloqueo del botón existente) ...
                     const diaCerrado = registroHoy && registroHoy.salida && registroHoy.salida.trim() !== '';
 
-                    // Lógica de bloqueo:
-                    // Se bloquea si el timer NO está corriendo Y (No hay registro de hoy O el día ya está cerrado)
-                    // Nota: Si el timer está corriendo, siempre dejamos el botón habilitado para poder detenerlo.
                     if (!isRunning && (!registroHoy || diaCerrado)) {
                         btn.disabled = true;
                         btn.style.opacity = '0.5';
                         btn.style.cursor = 'not-allowed';
-                        // Tooltip útil para saber por qué está bloqueado
                         btn.title = diaCerrado ? "Día finalizado" : "Debes registrar entrada primero";
                     } else {
                         btn.disabled = false;
@@ -4249,15 +4261,29 @@ Generado por Sistema de Horarios version v6.14
                     }
 
                     if (isRunning) {
+                        // Estado ACTIVO
                         btn.classList.add('running');
                         btn.style.color = 'var(--c-red)';
                         btn.style.borderColor = 'var(--c-red)';
                         icon.setAttribute('href', '#icon-coffee');
+
+                        // <--- 2. ACTIVAR EFECTO EN TARJETA
+                        if (card) {
+                            card.classList.add('timer-running');
+                            // Opcional: Cambiar título temporalmente
+                            const titulo = card.querySelector('h2');
+                            if (titulo) titulo.innerHTML = `<svg class="icon"><use href="#icon-coffee"/></svg> En descanso...`;
+                        }
+
                     } else {
+                        // Estado INACTIVO
                         btn.classList.remove('running');
                         btn.style.color = 'var(--text-main)';
                         btn.style.borderColor = 'var(--border)';
                         icon.setAttribute('href', '#icon-coffee');
+
+                        // <--- 3. DESACTIVAR EFECTO EN TARJETA
+                        if (card) card.classList.remove('timer-running');
                     }
                 }
 
@@ -4611,5 +4637,5 @@ Generado por Sistema de Horarios version v6.14
     antiguos, da error de integridad >>>>>
 
     1) agregado history manager al boton de tiempo fuera que esta al lado del boton registrar
-    
+    2) efecto en tarjeta principal al comenzar un timer
     -->
