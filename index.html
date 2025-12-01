@@ -289,6 +289,10 @@
             color: #6b7280;
         }
 
+        #btn-timer-main:disabled {
+            display: none;
+        }
+
         /* Variantes de botones */
         .btn-clean,
         .btn-delete {
@@ -764,16 +768,12 @@
 
         .card-header-clickable:hover {
             opacity: 0.8;
-            /* Pequeño feedback visual al pasar el mouse */
         }
 
-        /* Animación de la flecha */
         .chevron {
             transition: transform 0.3s ease;
             position: absolute;
-            /* CAMBIO: Saca la flecha del flujo normal */
             right: 0;
-            /* CAMBIO: La pega al borde derecho */
         }
 
         .chevron.rotated {
@@ -991,7 +991,7 @@
                     </svg>
                 </h2>
                 <div class="form-collapsible" id="form-registro">
-                    <div class="form-group">
+                    <div class="form-group" style="padding-top: 20px;">
                         <label>Fecha</label>
                         <div class="input-with-btn">
                             <input type="date" id="fecha" />
@@ -4545,6 +4545,6 @@ Generado por Sistema de Horarios version v6.12
     Esto debido a que se cambió de hash utilizado a SHA256 y al momento de cargar los datos
     antiguos, da error de integridad >>>>>
 
-    1) agregado funcion timer en tiempo fuera
+    1) cambios en algunos botones y su visualizacion
     
     -->
