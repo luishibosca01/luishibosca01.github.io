@@ -888,6 +888,14 @@
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" class="icon-line" fill="currentColor"
                 stroke="currentColor"></rect>
         </symbol>
+        <symbol id="icon-coffee" viewBox="0 0 24 24">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1" class="icon-line" stroke="currentColor" fill="none"></path>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" class="icon-line" stroke="currentColor" fill="none">
+            </path>
+            <line x1="6" y1="1" x2="6" y2="4" class="icon-line" stroke="currentColor"></line>
+            <line x1="10" y1="1" x2="10" y2="4" class="icon-line" stroke="currentColor"></line>
+            <line x1="14" y1="1" x2="14" y2="4" class="icon-line" stroke="currentColor"></line>
+        </symbol>
     </svg>
     <div class="header">
         <h1><svg class="icon">
@@ -4084,10 +4092,10 @@ Generado por Sistema de Horarios version v6.11
 
                     if (isRunning) {
                         btn.classList.add('running');
-                        icon.setAttribute('href', '#icon-stop');
+                        icon.setAttribute('href', '#icon-coffee');
                     } else {
                         btn.classList.remove('running');
-                        icon.setAttribute('href', '#icon-play');
+                        icon.setAttribute('href', '#icon-coffee');
                     }
                 }
 
@@ -4157,12 +4165,12 @@ Generado por Sistema de Horarios version v6.11
                         btn.classList.add('running');
                         btn.style.color = 'var(--c-red)';
                         btn.style.borderColor = 'var(--c-red)';
-                        icon.setAttribute('href', '#icon-stop');
+                        icon.setAttribute('href', '#icon-coffee');
                     } else {
                         btn.classList.remove('running');
                         btn.style.color = 'var(--text-main)';
                         btn.style.borderColor = 'var(--border)';
-                        icon.setAttribute('href', '#icon-play');
+                        icon.setAttribute('href', '#icon-coffee');
                     }
                 }
 
