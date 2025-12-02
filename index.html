@@ -664,7 +664,7 @@
         }
 
         .animated-card {
-            animation: zoomIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+            animation: zoomIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
         }
 
         .toggle-hint,
@@ -792,6 +792,46 @@
 
         .chevron.rotated {
             transform: rotate(180deg);
+        }
+
+        /* modal informacion transiciones suaves y scrool */
+        .ayuda-scroll-container {
+            scroll-behavior: smooth;
+        }
+
+        .indice-lista {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1.5rem;
+            background: var(--input-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .indice-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .indice-link {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .indice-link:hover {
+            text-decoration: underline;
+        }
+
+        .volver-arriba {
+            display: inline-block;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-decoration: none;
         }
     </style>
 </head>
@@ -1142,7 +1182,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.14</span> <!-- Version -->
+                <span class="version-text">v6.16</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1223,11 +1263,6 @@
                 <div class="input-with-btn">
                     <input type="text" id="edit-tiempo-fuera" inputmode="numeric" placeholder="Ej: 00:20"
                         maxlength="5" />
-                    <button class="time-btn timer-btn" id="btn-timer-break" onclick="UILogic.toggleTimerBreak()">
-                        <svg class="icon">
-                            <use href="#icon-coffee" />
-                        </svg>
-                    </button>
                     <button class="time-btn" onclick="UILogic.limpiarCampo('edit-tiempo-fuera')">
                         <svg class="icon">
                             <use href="#icon-broom" />
@@ -1331,114 +1366,109 @@
                     Información
                 </span>
             </h3>
-            <div
-                style="text-align: left; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; max-height: 400px; overflow-y: auto;">
-                <p><strong>¿Como registro una entrada? </strong>Tocá el boton <svg class="icon">
+            <div class="ayuda-scroll-container"
+                style="text-align: left; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+
+                <p><strong id="inicio-ayuda">Temas de ayuda:</strong></p>
+                <ul class="indice-lista">
+                    <li class="indice-item"><a href="#ayuda-entrada" class="indice-link">📥 Registrar entrada</a></li>
+                    <li class="indice-item"><a href="#ayuda-salida" class="indice-link">📤 Registrar salida</a></li>
+                    <li class="indice-item"><a href="#ayuda-manual" class="indice-link">✏️ Fecha/Hora manual</a></li>
+                    <li class="indice-item"><a href="#ayuda-rango" class="indice-link">📅 Registrar rango
+                            (Vacaciones)</a></li>
+                    <li class="indice-item"><a href="#ayuda-borrar-rango" class="indice-link">🗑️ Borrar rango</a></li>
+                    <li class="indice-item"><a href="#ayuda-break" class="indice-link">☕ Timer / Tiempo fuera</a></li>
+                    <li class="indice-item"><a href="#ayuda-editar" class="indice-link">📝 Editar registro</a></li>
+                    <li class="indice-item"><a href="#ayuda-codigos" class="indice-link">🔢 Códigos especiales</a></li>
+                    <li class="indice-item"><a href="#ayuda-extra" class="indice-link">⚙️ Funciones extra</a></li>
+                </ul>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
+
+                <p id="ayuda-entrada"><strong>¿Cómo registro una entrada?</strong></p>
+                <p>Tocá el botón <svg class="icon">
                         <use href="#icon-save" />
-                    </svg></strong> Registrar, al hacerlo se genera un registro con la fecha y hora actual en el campo
-                    de ENTRADA, siempre y cuando no haya un registro con fecha actual y el campo de entrada vacio, en
-                    caso de haber una entrada y salida registrada, no se crea el registro.
-                </p>
+                    </svg> <strong>Registrar</strong>. Al hacerlo se genera un registro con la fecha y hora actual en el
+                    campo de entrada.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>¿Como registro una salida? </strong>Tocá el boton <svg class="icon">
+
+                <p id="ayuda-salida"><strong>¿Cómo registro una salida?</strong></p>
+                <p>Tocá el botón <svg class="icon">
                         <use href="#icon-save" />
-                    </svg></strong> Registrar, al hacerlo, luego de tener un registro con el campo de entrada relleno,
-                    este completará el campo de salida del registro del dia actual, completando y agregando a las
-                    tarjetas
-                    de estadisticas.
-                </p>
+                    </svg> <strong>Registrar</strong>. Si ya tienes una entrada hoy, este botón completará el campo de
+                    salida automáticamente.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>¿Como agregar una fecha y horas personalizadas? </strong>Tocá el boton<svg class="icon">
+
+                <p id="ayuda-manual"><strong>¿Cómo agregar una fecha y horas personalizadas?</strong></p>
+                <p>Tocá el botón <svg class="icon">
                         <use href="#icon-chevron-down" />
-                    </svg></strong>que se encuentra al costado derecho del boton <svg class="icon">
-                        <use href="#icon-save" />
-                    </svg></strong> Registrar, para expandir la tarjeta que contiene los campos fecha, entrada, y salida
-                    los cuales pueden ser modificados libremente, adicionalmente el boton
-                    <svg class="icon">
-                        <use href="#icon-clock" />
-                    </svg> al costado de los campos pega la hora actual, si se toca nuevamente y el campo tiene algun
-                    dato, se limpia el mismo.
+                    </svg> que se encuentra al costado derecho del botón Registrar para expandir el formulario manual.
                 </p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>¿Como registro un rango de fechas? </strong>Tocá el boton <svg class="icon">
+
+                <p id="ayuda-rango"><strong>¿Cómo registro un rango de fechas?</strong></p>
+                <p>Tocá el botón <svg class="icon">
                         <use href="#icon-calendar-simple" />
-                    </svg></strong> que se encuentra al costado derecho del campo fecha, al hacerlo se abre un menú,
-                    donde se
-                    puede elegir un rango de fechas y el tipo de registro especial, como vacaciones, licencias y
-                    feriados, al registrarlos se creara un item en el historico que contiene a todos los registro del
-                    rango.
-                </p>
+                    </svg> junto al campo fecha. Se abre un menú para elegir "Desde" y "Hasta" y el tipo de registro
+                    (Vacaciones, Licencias, etc.).</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>¿Como borro un rango de fechas? </strong>Tocá el boton <svg class="icon">
+
+                <p id="ayuda-borrar-rango"><strong>¿Cómo borro un rango de fechas?</strong></p>
+                <p>En el mismo menú del calendario <svg class="icon">
                         <use href="#icon-calendar-simple" />
-                    </svg></strong> que se encuentra al costado derecho del campo fecha, al hacerlo se abre un menú,
-                    donde se puede elegir un rango de fechas y el tipo de registro especial, como vacaciones, licencias
-                    y feriados, etc, una vez elegido el rango y tipo de registro, tocá el boton borrar y se van a
-                    eliminar todos los registros del tipo y rango de fechas seleccionado.
-                </p>
+                    </svg>, selecciona las fechas, el tipo de registro y toca el botón <strong>Borrar</strong>.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>¿Como registro un "break" o tiempo fuera? </strong>Tocá el boton <svg class="icon">
+
+                <p id="ayuda-break"><strong>¿Cómo registro un "break" o tiempo fuera?</strong></p>
+                <p>Tocá el botón <svg class="icon">
                         <use href="#icon-coffee" />
-                    </svg></strong> que se encuentra al costado izquierdo del boton, <svg class="icon">
-                        <use href="#icon-save" />
-                    </svg></strong> Registrar, al hacerlo el boton cambia de color y comienza a correr un "timer", al
-                    tocarlo nuevamente, se detendra y agregará el tiempo transcurrido al campo "tiempo fuera" del
-                    registro actual, como el timer funciona de forma global, se puede dejar corriendo y tocar un
-                    registro cualquiera y cancelarlo desde alli, y el tiempo se agregará al registro seleccionado. Esta
-                    funcion puede seguir corriendo aún cerrando la aplicacion o reinciando el dispositivo, ya que no es
-                    un timer como tal, sino un timestamp
-                </p>
+                    </svg> junto a Registrar. El timer comenzará a correr. Al tocarlo de nuevo, el tiempo transcurrido
+                    se descontará del total del día.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>¿Como edito un registro? </strong> para hacerlo, toca el registro en la tarjeta <svg
-                        class="icon">
-                        <use href="#icon-stats" />
-                    </svg></strong> Historico, se va a abrir un menú donde se puede modificar
-                    completamente el registro, fecha, entrada, salida, tiempo fuera, una vez modificado, se debe guardar
-                    los cambios, o bien descartarlos con el boton cancelar, ademas se puede eliminar tambien, (si el
-                    registro se guarda con los campos entrada y salida vacios, este se borra)
-                </p>
+
+                <p id="ayuda-editar"><strong>¿Cómo edito un registro?</strong></p>
+                <p>Toca cualquier registro en la lista del Histórico. Se abrirá un menú para modificar fecha, horas o
+                    eliminar el registro.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>¿Como registro un feriado o licencia? </strong> Tocá el boton<svg class="icon">
-                        <use href="#icon-chevron-down" />
-                    </svg></strong>que se encuentra al costado derecho del boton <svg class="icon">
-                        <use href="#icon-save" />
-                    </svg></strong> Registrar, para expandir la tarjeta que contiene los campos fecha, entrada, y
-                    salida.
-                    Para registrar dias especiales hay codigos que deben rellenarse en los campos de entrada y salida:
-                </p>
+
+                <p id="ayuda-codigos"><strong>Códigos especiales (Feriados/Licencias)</strong></p>
+                <p>Si editas manualmente, usa estos horarios:</p>
+                <ul style="list-style: none; padding-left: 0.5rem;">
+                    <li>🥳 <strong>Feriados:</strong> 00:00 a 00:00</li>
+                    <li>✈️ <strong>Ausencias:</strong> 11:11 a 11:11</li>
+                    <li>🏖️ <strong>Vacaciones:</strong> 22:22 a 22:22</li>
+                </ul>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>🥳 Feriados:</strong> Ingresa <code>00:00</code></p>
-                <p><strong>✈️ Ausencias/Licencias:</strong> Ingresa <code>11:11</code></p>
-                <p><strong>🏖️ Vacaciones:</strong> Ingresa <code>22:22</code></p>
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>Funciones adicionales</strong>
-                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                    Soporte para exportacion e importacion
-                    de registros, dentro del menú de configuracion, los registros importados se pueden agregar de 2
-                    formas: reemplazando todos los existentes, o combinando registros, este ultimo agrega los registros
-                    faltantes teniendo en cuenta la fecha solamente.
-                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                    Se pueden configurar los dias habiles, y horas objetivo diario, en el menu de configuracion,
-                    modificar estos campos cambia el objetivo de todos los registros existentes y futuros
-                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                    Se puede realizar un borrado completo de los registros, dentro del menu de configiracion
-                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                    Soporte para deshacer y rehacer, cada accion como agregar, borrar o editar un registro guarda un
-                    estado que puede ser revertido hasta que se cierre la pagina, una vez cerrada la misma los
-                    cambios no se pueden revertir. esta funcion se encuentra oculta en el boton <svg class="icon">
-                        <use href="#icon-chevron-down" />
-                    </svg></strong> del Historico
-                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                    Soporte para filtrar registros en el historico, oculta en el boton <svg class="icon">
-                        <use href="#icon-chevron-down" />
-                    </svg></strong> del Historico, al tocar el icono <svg class="icon">
-                        <use href="#icon-filter" />
-                    </svg></strong> se abre un menu para seleccionar un rango de fechas, se puede seleccionar de forma
-                    conjunta o unica
-                </p>
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <p><strong>LA DISPONIBILIDAD Y USABILIDAD DEL SISTEMA NO ESTÁ GARANTIZADO POR NADIE, SE PUEDE COPIAR Y
-                        MODIFICAR LIBREMENTE EL CODIGO O REPOSITORIO</strong>
+
+                <p id="ayuda-extra"><strong>Funciones adicionales</strong></p>
+                <ul style="padding-left: 1.5rem;">
+                    <li>Exportar/Importar (Configuración)</li>
+                    <li>Configurar días hábiles (Configuración)</li>
+                    <li>Configurar horas diarias (Configuración)</li>
+                    <li>Deshacer/Rehacer (Menú Histórico)</li>
+                    <li>Filtros de búsqueda (Menú Histórico)</li>
+                    <li>Almacenamiento de datos en localStorage</li>
+                </ul>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+                <br><br>
+                <p><strong>LA DISPONIBILIDAD Y USABILIDAD DEL SISTEMA NO ESTÁ GARANTIZADO POR NADIE.
+                        EL CODIGO ESTA DISPONIBLE EN GITHUB PARA BAJARLO Y EDITARLO</strong></p>
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
@@ -3562,7 +3592,6 @@
                     const diasHabilesConfig = D.diasHabiles();
                     const vistaActual = D.vistaActual();
 
-                    // AQUÍ PASAMOS EL ID NUEVO A LA LISTA
                     actualizarListaRegistros(registros, idNuevo);
 
                     const { inicio: ini, fin: fn } = obtenerSemanaActual();
@@ -3576,10 +3605,16 @@
                     const tituloEl = $('stats-titulo');
                     const hintEl = $('toggle-hint');
                     const bufferEl = $('stats-buffer');
+                    const fechaUltimoDia = new Date(ini.replace(/-/g, '/') + ' 00:00:00');
+                    fechaUltimoDia.setDate(fechaUltimoDia.getDate() + (diasHabilesConfig - 1));
+                    const ultimoDiaStr = `${fechaUltimoDia.getFullYear()}-${String(fechaUltimoDia.getMonth() + 1).padStart(2, '0')}-${String(fechaUltimoDia.getDate()).padStart(2, '0')}`;
+                    const registroFinSemana = registros.find(r => r.fecha === ultimoDiaStr);
+                    const semanaCerrada = registroFinSemana && registroFinSemana.salida && registroFinSemana.salida !== '';
 
                     if (bufferEl) {
                         bufferEl.innerHTML = '';
-                        if (bufferSemanal !== 0) {
+                        // 3. Agregamos la condición !semanaCerrada para ocultarlo si ya terminamos
+                        if (bufferSemanal !== 0 && !semanaCerrada) {
                             if (Math.abs(bufferSemanal) > 0.01) {
                                 const esPositivo = bufferSemanal > 0;
                                 const bufferIcono = esPositivo ? '✅' : '⚠️';
@@ -3725,7 +3760,6 @@
                     }
                     actualizarEstadisticas();
                     actualizarEstadoBotonTimerMain();
-                    actualizarEstadoBotonTimer();
                 }
 
                 function alternarTema() {
@@ -4135,7 +4169,7 @@ REPORTE DE HORAS TRABAJADAS
 
 ────────────────────────────────────────────────────────────────
 
-Generado por Sistema de Horarios version v6.14
+Generado por Sistema de Horarios version v6.16
 `
                     };
 
@@ -4190,51 +4224,6 @@ Generado por Sistema de Horarios version v6.14
                     return `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
                 }
 
-                function actualizarEstadoBotonTimer() {
-                    const btn = document.getElementById('btn-timer-break');
-                    if (!btn) return;
-
-                    const isRunning = localStorage.getItem('breakStartTime') !== null;
-                    const icon = btn.querySelector('use');
-
-                    if (isRunning) {
-                        btn.classList.add('running');
-                        icon.setAttribute('href', '#icon-coffee');
-                    } else {
-                        btn.classList.remove('running');
-                        icon.setAttribute('href', '#icon-coffee');
-                    }
-                }
-
-                function toggleTimerBreak() {
-                    const storageKey = 'breakStartTime';
-                    const storedStart = localStorage.getItem(storageKey);
-                    const input = document.getElementById('edit-tiempo-fuera');
-
-                    if (!storedStart) {
-                        // --- INICIAR ---
-                        localStorage.setItem(storageKey, Date.now());
-                        mostrarToast('⏱️ Tiempo fuera iniciado', 'info');
-                    } else {
-                        // --- DETENER ---
-                        const start = parseInt(storedStart);
-                        const end = Date.now();
-                        const diffMs = end - start;
-
-                        // Mínimo 1 minuto para evitar registros de 00:00 por clicks accidentales rápidos
-                        let minutosTranscurridos = Math.round(diffMs / 60000);
-                        if (minutosTranscurridos < 1) minutosTranscurridos = 1;
-
-                        const nuevoValor = sumarMinutosAHora(input.value, minutosTranscurridos);
-                        input.value = nuevoValor;
-
-                        localStorage.removeItem(storageKey);
-                        mostrarToast(`✅ Se agregaron ${minutosTranscurridos} minutos`, 'success');
-                    }
-
-                    actualizarEstadoBotonTimer();
-                }
-
                 function actualizarEstadoBotonTimerMain() {
                     const btn = document.getElementById('btn-timer-main');
                     const card = document.getElementById('stats-card'); // <--- 1. REFERENCIA A LA TARJETA
@@ -4270,9 +4259,8 @@ Generado por Sistema de Horarios version v6.14
                         // <--- 2. ACTIVAR EFECTO EN TARJETA
                         if (card) {
                             card.classList.add('timer-running');
-                            // Opcional: Cambiar título temporalmente
                             const titulo = card.querySelector('h2');
-                            if (titulo) titulo.innerHTML = `<svg class="icon"><use href="#icon-coffee"/></svg> En descanso...`;
+                            if (titulo) titulo.innerHTML = `<svg class="icon"><use href="#icon-coffee"/></svg> Tiempo fuera...`;
                         }
 
                     } else {
@@ -4302,7 +4290,7 @@ Generado por Sistema de Horarios version v6.14
                     if (!storedStart) {
                         // --- INICIAR ---
                         localStorage.setItem(storageKey, Date.now());
-                        mostrarToast('⏱️ Tiempo fuera iniciado (en registro de hoy)', 'info');
+                        mostrarToast('⏱️ Tiempo fuera iniciado', 'info');
                     } else {
                         // --- DETENER ---
                         const start = parseInt(storedStart);
@@ -4333,8 +4321,6 @@ Generado por Sistema de Horarios version v6.14
                         mostrarToast(`✅ Se descontaron ${minutosTranscurridos} min al registro de hoy`, 'success');
                     }
 
-                    // Actualizamos ambos botones (el del modal y el principal)
-                    actualizarEstadoBotonTimer();
                     actualizarEstadoBotonTimerMain();
                 }
 
@@ -4415,7 +4401,7 @@ Generado por Sistema de Horarios version v6.14
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
                         cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones, cerrarVacaciones, toggleFormulario,
-                        toggleBotonesHistorico, toggleStats, toggleTimerBreak, toggleTimerBreakMain
+                        toggleBotonesHistorico, toggleStats, toggleTimerBreakMain
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -4436,7 +4422,6 @@ Generado por Sistema de Horarios version v6.14
                     PWAInstaller.init();
 
                     actualizarUI();
-                    actualizarEstadoBotonTimer();
                     setInterval(actualizarUI, 60000);
                     console.log('Sistema iniciado correctamente Luigibosca');
                 }
@@ -4539,7 +4524,8 @@ Generado por Sistema de Horarios version v6.14
                     limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                     incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
-                    cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, toggleTimerBreak, actualizarEstadoBotonTimer, sumarMinutosAHora
+                    cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
+                    toggleTimerBreakMain, actualizarEstadoBotonTimerMain
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -4629,13 +4615,13 @@ Generado por Sistema de Horarios version v6.14
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.14
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.16
     // ====================================================================
     <<< Se crea una funcion de compatibilidad para "async function cargarConVerificacion"
-    la cual debe ser removida dentro de una semana de hosteada, y descomentar la nueva.
+    la cual debe ser removida dentro de un tiempo de hosteada, y descomentar la nueva.
     Esto debido a que se cambió de hash utilizado a SHA256 y al momento de cargar los datos
     antiguos, da error de integridad >>>>>
 
-    1) agregado history manager al boton de tiempo fuera que esta al lado del boton registrar
-    2) efecto en tarjeta principal al comenzar un timer
+    1) agregado indice y estilos en el modal de informacion
+
     -->
