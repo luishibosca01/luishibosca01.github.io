@@ -1882,46 +1882,6 @@
                         const stored = localStorage.getItem('registros');
                         if (!stored) return [];
                         const data = JSON.parse(stored);
-
-                        if (data.hash) {
-                            const hashCalculado = await S.calcularHashSHA256(data.registros);
-
-                            // comparación segura contra timing attacks
-                            if (!S.constantTimeCompare(hashCalculado, data.hash)) {
-
-                                if (data.hash.length < 64 && hashCalculado.length === 64) {
-                                    console.log('🔄 Migrando formato de seguridad (FNV1a -> SHA-256)...');
-
-                                    setTimeout(async () => {
-                                        await guardarConIntegridad((data.registros || []).filter(S.validarRegistroSeguro));
-                                        console.log('✅ Migración de hash completada en segundo plano.');
-                                    }, 2000);
-
-                                    return (data.registros || []).filter(S.validarRegistroSeguro);
-                                }
-
-                                console.warn('⚠️ Integridad comprometida');
-                                UILogic.mostrarToast('Advertencia de integridad', 'warning');
-                                const continuar = confirm('⚠️ Los datos pueden haber sido modificados.\n\n¿Deseas cargarlos de todos modos?');
-                                if (!continuar) {
-                                    localStorage.removeItem('registros');
-                                    return [];
-                                }
-                            }
-                        }
-                        return (data.registros || []).filter(S.validarRegistroSeguro);
-                    } catch (e) {
-                        console.error('Error cargando:', e);
-                        return [];
-                    }
-                }
-                // >>>>> ESTA FUNCION DE HASH DEBE VOLVER DESPUES DE 2 SEMANAS <<<<<
-
-                /*async function cargarConVerificacion() {
-                    try {
-                        const stored = localStorage.getItem('registros');
-                        if (!stored) return [];
-                        const data = JSON.parse(stored);
  
                         if (data.hash) {
                             const hashCalculado = await S.calcularHashSHA256(data.registros);
@@ -1942,7 +1902,7 @@
                         console.error('Error cargando:', e);
                         return [];
                     }
-                }*/
+                }
 
                 async function registrarVacaciones() {
                     const desde = S.sanitizeString($('vacaciones-fecha-desde').value, 10);
@@ -4636,11 +4596,7 @@ Generado por Sistema de Horarios version v6.16
 <!--// ====================================================================
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.16
     // ====================================================================
-    <<< Se crea una funcion de compatibilidad para "async function cargarConVerificacion"
-    la cual debe ser removida dentro de un tiempo de hosteada, y descomentar la nueva.
-    Esto debido a que se cambió de hash utilizado a SHA256 y al momento de cargar los datos
-    antiguos, da error de integridad >>>>>
-
-    1) mejoras en general de presentacion
+    1) Se agrega limite al registro por lotes
+    2) se quita la funcion de compatibilidad para la migracion de hash
 
     -->
