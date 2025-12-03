@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horarios-v6.18-cache';
+const CACHE_NAME = 'horarios-v6.18v2-cache';
 const urlsToCache = [
   './',
   './index.html',
@@ -12,63 +12,61 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Archivos cacheados exitosamente');
-        return cache.addAll(urlsToCache);
+        console.log('Abriendo cache');
+        return cache.addAll(urlsToCache).catch(err => {
+            console.error('CRÍTICO: Falló la carga de archivos en el install:', err);
+            throw err; 
+        });
       })
-      .catch(err => console.error('Error al cachear:', err))
   );
-  self.skipWaiting(); // Activa inmediatamente el nuevo SW
+  self.skipWaiting();
 });
 
-// Activación y limpieza de caches antiguos
+// Activación
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Eliminando cache antiguo:', cacheName);
+            console.log('Borrando cache viejo:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     })
   );
-  return self.clients.claim(); // Toma control inmediato
+  return self.clients.claim();
 });
 
-// Fetch con validación de origen y manejo de errores
+// Fetch
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
-  
-  // Solo intercepta peticiones del mismo origen
-  if (url.origin !== location.origin) {
-    return; // Deja pasar peticiones externas sin interceptar
-  }
+  if (url.origin !== location.origin) return;
 
   event.respondWith(
     caches.match(event.request)
       .then(response => {
         if (response) {
-          return response; // Devuelve del cache
+          return response;
         }
-        
-        // Intenta obtener de la red
         return fetch(event.request)
           .then(networkResponse => {
-            // Opcionalmente cachea nuevas respuestas
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => {
-                cache.put(event.request, responseClone);
-              });
+            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+              return networkResponse;
             }
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
             return networkResponse;
           })
-          .catch(err => {
-            console.error('Fetch falló:', err);
-            // Opcionalmente devuelve una página offline
-            return caches.match('./index.html');
+          .catch(() => {
+            if (event.request.mode === 'navigate') {
+              return caches.match('./index.html');
+            }
           });
       })
   );
