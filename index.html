@@ -1194,7 +1194,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.19</span> <!-- Version -->
+                <span class="version-text">v6.23</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1356,6 +1356,16 @@
             <div class="form-group">
                 <label>Hasta</label>
                 <input type="date" id="filtro-fecha-hasta" />
+            </div>
+            <div class="form-group">
+                <label>Tipo de registro</label>
+                <select id="filtro-tipo">
+                    <option value="">Todos</option>
+                    <option value="normal">🕒 Normales</option>
+                    <option value="feriado">🥳 Feriados</option>
+                    <option value="ausencia">✈️ Ausencias</option>
+                    <option value="vacaciones">🏖️ Vacaciones</option>
+                </select>
             </div>
             <div class="btn-group">
                 <button class="btn-edit" onclick="DataManagement.aplicarFiltros()">
@@ -1519,10 +1529,11 @@
             </div>
             <div class="form-group">
                 <label>Tipo de registro</label>
-                <select id="vacaciones-tipo">
+                <select id="vacaciones-tipo" onchange="UILogic.actualizarBotonesVacaciones()">
                     <option value="vacaciones">🏖️ Vacaciones (22:22)</option>
                     <option value="ausencia">✈️ Ausencia/Licencia (11:11)</option>
                     <option value="feriado">🥳 Feriados (00:00)</option>
+                    <option value="normal">🕒 Normales (borrar)</option>
                 </select>
             </div>
             <div class="btn-group">
@@ -1896,6 +1907,7 @@
                 let filtroActivo = false;
                 let filtroDesde = null;
                 let filtroHasta = null;
+                let filtroTipo = null;
 
                 async function cargarConVerificacion() {
                     try {
@@ -2043,6 +2055,8 @@
                     }
 
                     let entrada, salida, tipoTexto;
+
+                    // ✅ NUEVO: Agregar caso para "normal"
                     switch (tipo) {
                         case 'vacaciones':
                             entrada = '22:22';
@@ -2059,22 +2073,55 @@
                             salida = '00:00';
                             tipoTexto = 'Feriados';
                             break;
+                        case 'normal':
+                            // Para normales, borramos cualquier registro que NO sea especial
+                            entrada = null;
+                            salida = null;
+                            tipoTexto = 'Normales';
+                            break;
                         default:
                             UILogic.mostrarToast('Tipo inválido', 'error');
                             return;
                     }
 
-                    const registrosAEliminar = registros.filter(r => {
-                        return r.fecha >= desde &&
-                            r.fecha <= hasta &&
-                            r.entrada === entrada &&
-                            r.salida === salida;
-                    });
+                    // ✅ LÓGICA DIFERENTE PARA NORMALES
+                    let registrosAEliminar;
+
+                    if (tipo === 'normal') {
+                        // Para normales: eliminar registros que NO sean feriados, ausencias o vacaciones
+                        registrosAEliminar = registros.filter(r => {
+                            const dentroDelRango = r.fecha >= desde && r.fecha <= hasta;
+                            const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
+                            const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+                            const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
+
+                            // Solo eliminar si está en el rango Y NO es un tipo especial
+                            return dentroDelRango && !esFeriado && !esAusencia && !esVacaciones;
+                        });
+                    } else {
+                        // Para tipos especiales: lógica original
+                        registrosAEliminar = registros.filter(r => {
+                            return r.fecha >= desde &&
+                                r.fecha <= hasta &&
+                                r.entrada === entrada &&
+                                r.salida === salida;
+                        });
+                    }
 
                     if (registrosAEliminar.length === 0) {
                         UILogic.mostrarToast(`No hay registros de ${tipoTexto} en ese período`, 'info');
                         return;
                     }
+
+                    // CONFIRMACIÓN CON DETALLE
+                    const confirmar = confirm(
+                        `⚠️ ¿Estás seguro?\n\n` +
+                        `Se eliminarán ${registrosAEliminar.length} registro(s) de tipo ${tipoTexto}\n` +
+                        `en el período del ${desde} al ${hasta}.\n\n` +
+                        `Esta acción se puede DESHACER antes de cerrar la página.`
+                    );
+
+                    if (!confirmar) return;
 
                     registros = registros.filter(r => !registrosAEliminar.includes(r));
 
@@ -2083,6 +2130,7 @@
                     if (saved) {
                         HistoryManager.saveState(registros);
                     }
+
                     if (saved) {
                         UILogic.mostrarToast(`✅ ${registrosAEliminar.length} registro(s) de ${tipoTexto} eliminados`, 'success');
                         UILogic.cerrarVacaciones();
@@ -2833,6 +2881,7 @@
 
                         UILogic.mostrarToast(mensajeExito, 'success');
                         UILogic.cerrarImportar();
+                        UILogic.cerrarConfig();
                         $('file-import').value = '';
                     }
                 }
@@ -2899,19 +2948,32 @@
                 function aplicarFiltros() {
                     const desde = $('filtro-fecha-desde').value;
                     const hasta = $('filtro-fecha-hasta').value;
+                    const tipo = $('filtro-tipo').value;
 
-                    if (!desde && !hasta) {
-                        UILogic.mostrarToast('Selecciona al menos una fecha', 'warning');
+                    if (!desde && !hasta && !tipo) {
+                        UILogic.mostrarToast('Selecciona al menos un filtro', 'warning');
                         return;
                     }
 
                     filtroActivo = true;
                     filtroDesde = desde || null;
                     filtroHasta = hasta || null;
+                    filtroTipo = tipo || null;
 
                     guardarYActualizar(false);
                     UILogic.cerrarFiltros();
-                    UILogic.mostrarToast('Filtro aplicado', 'success');
+
+                    let mensaje = 'Filtro aplicado';
+                    if (tipo) {
+                        const tipos = {
+                            'normal': 'Normales',
+                            'feriado': 'Feriados',
+                            'ausencia': 'Ausencias',
+                            'vacaciones': 'Vacaciones'
+                        };
+                        mensaje += `: ${tipos[tipo]}`;
+                    }
+                    UILogic.mostrarToast(mensaje, 'success');
                     document.getElementById('btn-filtro').classList.add('filtro-activo');
                 }
 
@@ -2919,8 +2981,10 @@
                     filtroActivo = false;
                     filtroDesde = null;
                     filtroHasta = null;
+                    filtroTipo = null;
                     $('filtro-fecha-desde').value = '';
                     $('filtro-fecha-hasta').value = '';
+                    $('filtro-tipo').value = '';
 
                     guardarYActualizar(false);
                     UILogic.cerrarFiltros();
@@ -2932,8 +2996,31 @@
                     if (!filtroActivo) return registros;
 
                     return registros.filter(r => {
+                        // Filtro por fechas
                         if (filtroDesde && r.fecha < filtroDesde) return false;
                         if (filtroHasta && r.fecha > filtroHasta) return false;
+
+                        if (filtroTipo) {
+                            const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
+                            const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+                            const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
+
+                            switch (filtroTipo) {
+                                case 'feriado':
+                                    if (!esFeriado) return false;
+                                    break;
+                                case 'ausencia':
+                                    if (!esAusencia) return false;
+                                    break;
+                                case 'vacaciones':
+                                    if (!esVacaciones) return false;
+                                    break;
+                                case 'normal':
+                                    if (esFeriado || esAusencia || esVacaciones) return false;
+                                    break;
+                            }
+                        }
+
                         return true;
                     });
                 }
@@ -3781,7 +3868,28 @@
                                 } else {
                                     setProgressBarColor(progressEl, 'blue');
                                     const faltante = Math.max(0, objetivoDiario - tiempoTranscurrido);
-                                    if (mensajeEl) mensajeEl.textContent = tiempoTranscurrido >= objetivoDiario ? `Te podes ir! (+${horasATexto(tiempoTranscurrido - objetivoDiario)})` : `Faltan ${horasATexto(faltante)}`;
+
+                                    if (mensajeEl) {
+                                        if (tiempoTranscurrido >= objetivoDiario) {
+                                            mensajeEl.textContent = `Te podes ir! (+${horasATexto(tiempoTranscurrido - objetivoDiario)})`;
+                                        } else {
+                                            const faltanteTexto = `Faltan ${horasATexto(faltante)}`;
+
+                                            // Calcular el buffer semanal hasta hoy
+                                            const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
+
+                                            // Si el buffer cubre lo que falta hoy
+                                            if (bufferSemanal >= faltante) {
+                                                mensajeEl.textContent = `${faltanteTexto}, pero te podés ir`;
+                                            } else if (bufferSemanal < 0) {
+                                                // Hay déficit acumulado
+                                                mensajeEl.textContent = `${faltanteTexto}, pero debes tiempo`;
+                                            } else {
+                                                // Buffer positivo pero no alcanza, o buffer en 0
+                                                mensajeEl.textContent = faltanteTexto;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         } else {
@@ -4394,6 +4502,33 @@ Generado por Sistema de Horarios
                     setBloqueoEdicion(!edicionBloqueada);
                 }
 
+                function mostrarVacaciones() {
+                    $('vacaciones-fecha-desde').value = '';
+                    $('vacaciones-fecha-hasta').value = '';
+                    $('vacaciones-tipo').value = 'vacaciones';
+                    $('modal-vacaciones').classList.add('show');
+                    actualizarBotonesVacaciones();
+                }
+
+                function cerrarVacaciones() {
+                    $('modal-vacaciones').classList.remove('show');
+                }
+
+                function actualizarBotonesVacaciones() {
+                    const tipo = $('vacaciones-tipo').value;
+                    const btnRegistrar = document.querySelector('#modal-vacaciones .btn-backup');
+
+                    if (tipo === 'normal') {
+                        btnRegistrar.disabled = true;
+                        btnRegistrar.style.opacity = '0.5';
+                        btnRegistrar.title = 'No se pueden registrar rangos de tipo Normal';
+                    } else {
+                        btnRegistrar.disabled = false;
+                        btnRegistrar.style.opacity = '1';
+                        btnRegistrar.title = '';
+                    }
+                }
+
                 async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
@@ -4454,17 +4589,6 @@ Generado por Sistema de Horarios
                         if (el) el.addEventListener('input', formatearInput);
                     });
 
-                    function mostrarVacaciones() {
-                        $('vacaciones-fecha-desde').value = '';
-                        $('vacaciones-fecha-hasta').value = '';
-                        $('modal-vacaciones').classList.add('show');
-                    }
-
-                    function cerrarVacaciones() {
-                        $('modal-vacaciones').classList.remove('show');
-                    }
-
-
 
                     window.UILogic = {
                         alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
@@ -4474,7 +4598,7 @@ Generado por Sistema de Horarios
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
                         cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
                         cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
-                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion
+                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -4594,8 +4718,8 @@ Generado por Sistema de Horarios
                 return {
                     init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
                     cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast, mostrarError,
-                    limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
-                    incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
+                    limpiarError, resetearBoton, restaurarBotonGuardarEdicion, mostrarVacaciones, toggleFormulario,
+                    cerrarVacaciones, incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo, actualizarBotonesVacaciones,
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
                     toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
@@ -4688,9 +4812,10 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.19
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.23
     // ====================================================================
-    1) Mejoras de codigo
-    2) agregado nuevamente el boton de bloqueo
+    1) agregado nueva categoria "normales" en el modal de registro por lotes para borrar 
+    un rango de registros
+
 
     -->
