@@ -975,7 +975,16 @@
             <polyline points="6 9 12 15 18 9" class="icon-line" stroke="currentColor" stroke-width="2" fill="none">
             </polyline>
         </symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" class="icon-line" stroke="currentColor"></path>
+        </symbol>
+        <symbol id="icon-lock-open" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1" class="icon-line" stroke="currentColor"></path>
+        </symbol>
     </svg>
+
     <div class="header">
         <h1><svg class="icon">
                 <use href="#icon-clock" />
@@ -1182,7 +1191,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.16</span> <!-- Version -->
+                <span class="version-text">v6.18</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1238,7 +1247,15 @@
             </h3>
             <div class="form-group">
                 <label>Fecha</label>
-                <input type="date" id="edit-fecha" />
+                <div class="input-with-btn">
+                    <input type="date" id="edit-fecha" />
+                    <button class="time-btn" id="btn-lock-toggle" onclick="UILogic.toggleBloqueoEdicion()"
+                        title="Desbloquear edición">
+                        <svg class="icon">
+                            <use href="#icon-lock" />
+                        </svg>
+                    </button>
+                </div>
             </div>
             <div class="form-group">
                 <label>Entrada</label>
@@ -1467,7 +1484,7 @@
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
                 <br><br>
                 <p><strong>LA DISPONIBILIDAD Y USABILIDAD DEL SISTEMA ESTÁ GARANTIZADO POR PINDONGA.
-                        EL CODIGO ESTA DISPONIBLE EN EL REPOSITORIO DE GITHUB PARA BAJAR, EDITAR Y 
+                        EL CODIGO ESTA DISPONIBLE EN EL REPOSITORIO DE GITHUB PARA BAJAR, EDITAR Y
                         MEJORAR LIBREMENTE.</strong></p>
             </div>
             <div class="btn-group">
@@ -1882,10 +1899,10 @@
                         const stored = localStorage.getItem('registros');
                         if (!stored) return [];
                         const data = JSON.parse(stored);
- 
+
                         if (data.hash) {
                             const hashCalculado = await S.calcularHashSHA256(data.registros);
- 
+
                             // ✅ Usar comparación segura contra timing attacks
                             if (!S.constantTimeCompare(hashCalculado, data.hash)) {
                                 console.warn('⚠️ Integridad comprometida');
@@ -2422,6 +2439,7 @@
                     $('edit-salida').value = r.salida || '';
                     $('edit-tiempo-fuera').value = r.tiempoFuera || '';
                     $('modal-editar').classList.add('show');
+                    UILogic.setBloqueoEdicion(true);
                 }
                 async function guardarEdicion() {
                     const r = registros.find(x => x.id === editandoId);
@@ -2431,11 +2449,34 @@
                     const btnGuardar = modal.querySelector('.btn-edit');
                     btnGuardar.disabled = true;
 
+                    // Obtener valores de los inputs
                     const f = S.sanitizeString($('edit-fecha').value, 10);
                     const e = S.sanitizeString($('edit-entrada').value.trim(), 5);
                     const s = S.sanitizeString($('edit-salida').value.trim(), 5);
                     let tf = S.sanitizeString($('edit-tiempo-fuera').value.trim(), 5);
                     if (tf === '') tf = null;
+
+                    // DETECTAR CAMBIOS ---
+                    const actualEntrada = r.entrada || '';
+                    const nuevaEntrada = e || '';
+                    const actualSalida = r.salida || '';
+                    const nuevaSalida = s || '';
+                    const actualTF = r.tiempoFuera || '';
+                    const nuevoTF = tf || ''; // tf puede ser null, pero para comparar usamos ''
+
+                    // Comparamos todo
+                    if (r.fecha === f &&
+                        actualEntrada === nuevaEntrada &&
+                        actualSalida === nuevaSalida &&
+                        actualTF === nuevoTF) {
+
+                        // Si todo es igual, avisamos y cerramos
+                        UILogic.mostrarToast('Sin cambios', 'info');
+                        UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                        UILogic.cerrarEdicion();
+                        return;
+                    }
+                    // --------------------------------------
 
                     if (!S.validarFechaSegura(f) || (e && !S.validarHoraSegura(e)) || (s && !S.validarHoraSegura(s)) || (tf && !S.validarHoraSegura(tf))) {
                         UILogic.restaurarBotonGuardarEdicion(btnGuardar);
@@ -2478,6 +2519,7 @@
                         return;
                     }
 
+                    // Si pasó las validaciones y hubo cambios, actualizamos
                     r.fecha = f;
                     r.entrada = e || null;
                     r.salida = s || null;
@@ -2508,6 +2550,7 @@
                     const d = parseFloat($('config-dias-habiles').value);
                     const vd = parseFloat($('config-horas-diarias').value);
 
+                    // Validación básica
                     if (isNaN(d) || d < 1 || d > 7) {
                         UILogic.mostrarToast('Días hábiles inválidos', 'error');
                         return;
@@ -2517,9 +2560,19 @@
                         return;
                     }
 
+                    // --- NUEVA LÓGICA: DETECTAR CAMBIOS ---
+                    // Comparamos los valores nuevos (d, vd) con los actuales (diasHabiles, horasDiarias)
+                    if (d === diasHabiles && vd === horasDiarias) {
+                        UILogic.mostrarToast('Sin cambios', 'info');
+                        UILogic.cerrarConfig();
+                        return; // Salimos sin hacer nada más
+                    }
+                    // --------------------------------------
+
                     diasHabiles = d;
                     horasDiarias = vd;
 
+                    // Recalcular registros especiales si cambiaron las horas diarias
                     registros.forEach(r => {
                         if (r.entrada === '00:00' && r.salida === '00:00') {
                             const t = calcularHoras('00:00', '00:00', r.tiempoFuera || null);
@@ -4147,7 +4200,7 @@ REPORTE DE HORAS TRABAJADAS
 
 ────────────────────────────────────────────────────────────────
 
-Generado por Sistema de Horarios version v6.16
+Generado por Sistema de Horarios version v6.18
 `
                     };
 
@@ -4303,6 +4356,44 @@ Generado por Sistema de Horarios version v6.16
                     actualizarEstadoBotonTimerMain();
                 }
 
+                // --- Lógica de Bloqueo del Modal Editar ---
+                let edicionBloqueada = true;
+
+                function setBloqueoEdicion(bloqueado) {
+                    edicionBloqueada = bloqueado;
+
+                    // 1. Icono del candado
+                    const btnLock = $('btn-lock-toggle');
+                    if (btnLock) {
+                        const icon = btnLock.querySelector('use');
+                        icon.setAttribute('href', bloqueado ? '#icon-lock' : '#icon-lock-open');
+                        btnLock.title = bloqueado ? "Desbloquear edición" : "Bloquear edición";
+                        // Estilo visual para indicar estado (opcional, el candado cerrado ya es claro)
+                        btnLock.style.color = bloqueado ? 'var(--c-red)' : 'var(--text-main)';
+                    }
+
+                    // 2. Inputs del modal editar
+                    const inputs = ['edit-fecha', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'];
+                    inputs.forEach(id => {
+                        const el = $(id);
+                        if (el) el.disabled = bloqueado;
+                    });
+
+                    // 3. Botones de acción y helpers dentro del modal
+                    const modal = $('modal-editar');
+                    if (modal) {
+                        // Seleccionamos todos los botones EXCEPTO el candado y el botón Cancelar
+                        const botones = modal.querySelectorAll('button:not(#btn-lock-toggle):not(.btn-cancel)');
+                        botones.forEach(btn => {
+                            btn.disabled = bloqueado;
+                        });
+                    }
+                }
+
+                function toggleBloqueoEdicion() {
+                    setBloqueoEdicion(!edicionBloqueada);
+                }
+
                 async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
@@ -4373,14 +4464,17 @@ Generado por Sistema de Horarios version v6.16
                         $('modal-vacaciones').classList.remove('show');
                     }
 
+
+
                     window.UILogic = {
                         alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
                         cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
                         mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
-                        cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones, cerrarVacaciones, toggleFormulario,
-                        toggleBotonesHistorico, toggleStats, toggleTimerBreakMain
+                        cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
+                        cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
+                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -4504,7 +4598,8 @@ Generado por Sistema de Horarios version v6.16
                     incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
-                    toggleTimerBreakMain, actualizarEstadoBotonTimerMain
+                    toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion,
+                    setBloqueoEdicion,
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -4566,7 +4661,7 @@ Generado por Sistema de Horarios version v6.16
                         console.warn('⚠️ El Service Worker ha cambiado desde la última vez');
 
                         if (window.UILogic) {
-                            UILogic.mostrarToast('SW Actualizado', 'info');
+                            UILogic.mostrarToast('Actualizado', 'info');
                         }
                     }
                     localStorage.setItem('sw-hash', hash);
@@ -4594,9 +4689,8 @@ Generado por Sistema de Horarios version v6.16
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.16
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.18
     // ====================================================================
-    1) Se agrega limite al registro por lotes
-    2) se quita la funcion de compatibilidad para la migracion de hash
+    1) Mejoras en la logica de guardado
 
     -->
