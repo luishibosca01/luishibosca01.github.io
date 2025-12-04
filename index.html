@@ -836,6 +836,47 @@
             color: var(--text-muted);
             text-decoration: none;
         }
+
+        .header {
+            background: var(--bg-header);
+            padding: 0.3rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Nuevo: Selector de perfil */
+        #selector-perfil {
+            font-size: 1rem;
+            padding: 0.25rem 0.5rem;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            max-width: 200px;
+        }
+
+        #selector-perfil:hover {
+            border-color: var(--text-muted);
+        }
+
+        #selector-perfil:focus {
+            outline: none;
+            border-color: var(--input-focus);
+        }
     </style>
 </head>
 
@@ -989,9 +1030,13 @@
     </svg>
 
     <div class="header">
-        <h1><svg class="icon">
+        <h1>
+            <svg class="icon">
                 <use href="#icon-clock" />
-            </svg> Horarios</h1>
+            </svg>
+            <select id="selector-perfil" onchange="PerfilManager.cambiarPerfil()">
+            </select>
+        </h1>
         <div class="header-buttons">
             <button class="icon-btn" id="btn-install" style="display: none;" onclick="PWAInstaller.instalarApp()"
                 title="Instalar aplicación">
@@ -1194,7 +1239,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.23</span> <!-- Version -->
+                <span class="version-text">v6.27</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1212,6 +1257,30 @@
                     <button class="btn-increment" onclick="UILogic.decrementarDiasHabiles()">−</button>
                 </div>
                 <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
+            </div>
+            <div class="form-group">
+                <label>📍 Gestión de Perfiles</label>
+                <div class="input-with-btn">
+                    <input type="text" id="nombre-nuevo-perfil" placeholder="Nombre del perfil..." maxlength="30" />
+                    <button class="time-btn" onclick="PerfilManager.crearPerfil()" title="Crear perfil">
+                        <svg class="icon">
+                            <use href="#icon-plus" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="config-hint-text" style="text-align: left; margin-top: 0.5rem;">
+                    Perfil actual: <strong id="perfil-actual-nombre">Principal</strong>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Eliminar perfil actual</label>
+                <button class="btn-delete" onclick="PerfilManager.eliminarPerfilActual()" id="btn-eliminar-perfil">
+                    <svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg>
+                    Eliminar perfil
+                </button>
             </div>
             <div class="config-actions">
                 <button class="btn-export" onclick="DataManagement.exportarJSON()"><svg class="icon">
@@ -1791,6 +1860,266 @@
             })();
 
             // ====================================================================
+            // PERFIL MANAGER MODULE
+            // ====================================================================
+            const PerfilManager = (function (S) {
+                let perfilActual = 'default';
+                let perfiles = {};
+
+                function inicializar() {
+                    cargarPerfiles();
+                    actualizarSelector();
+                    actualizarNombrePerfil();
+                }
+
+                function cargarPerfiles() {
+                    try {
+                        const stored = localStorage.getItem('perfiles');
+                        perfiles = stored ? JSON.parse(stored) : {};
+
+                        // Crear perfil default si no existe
+                        if (!perfiles['default']) {
+                            perfiles['default'] = {
+                                nombre: 'Principal',
+                                registros: [],
+                                diasHabiles: 5,
+                                horasDiarias: 7
+                            };
+                        }
+
+                        perfilActual = localStorage.getItem('perfilActivo') || 'default';
+
+                        // Si el perfil actual no existe, usar default
+                        if (!perfiles[perfilActual]) {
+                            perfilActual = 'default';
+                        }
+
+                    } catch (e) {
+                        console.error('Error cargando perfiles:', e);
+                        perfiles = {
+                            'default': {
+                                nombre: 'Principal',
+                                registros: [],
+                                diasHabiles: 5,
+                                horasDiarias: 7
+                            }
+                        };
+                        perfilActual = 'default';
+                    }
+                }
+
+                function guardarPerfiles() {
+                    try {
+                        localStorage.setItem('perfiles', JSON.stringify(perfiles));
+                        localStorage.setItem('perfilActivo', perfilActual);
+                        return true;
+                    } catch (e) {
+                        console.error('Error guardando perfiles:', e);
+                        return false;
+                    }
+                }
+
+                function actualizarSelector() {
+                    const selector = document.getElementById('selector-perfil');
+                    if (!selector) return;
+
+                    selector.innerHTML = '';
+
+                    // Ordenar perfiles: default primero, luego alfabético
+                    const perfilesOrdenados = Object.entries(perfiles).sort((a, b) => {
+                        if (a[0] === 'default') return -1;
+                        if (b[0] === 'default') return 1;
+                        return a[1].nombre.localeCompare(b[1].nombre);
+                    });
+
+                    perfilesOrdenados.forEach(([id, perfil]) => {
+                        const option = document.createElement('option');
+                        option.value = id;
+                        option.textContent = perfil.nombre;
+                        if (id === perfilActual) {
+                            option.selected = true;
+                        }
+                        selector.appendChild(option);
+                    });
+                }
+
+                function actualizarNombrePerfil() {
+                    const nombreEl = document.getElementById('perfil-actual-nombre');
+                    if (nombreEl && perfiles[perfilActual]) {
+                        nombreEl.textContent = perfiles[perfilActual].nombre;
+                    }
+
+                    const btnEliminar = document.getElementById('btn-eliminar-perfil');
+                    if (btnEliminar) {
+                        btnEliminar.disabled = (perfilActual === 'default');
+                        btnEliminar.style.opacity = (perfilActual === 'default') ? '0.5' : '1';
+                    }
+                }
+
+                function cambiarPerfil() {
+                    const selector = document.getElementById('selector-perfil');
+                    if (!selector) return;
+
+                    const nuevoId = selector.value;
+
+                    if (nuevoId === perfilActual) return;
+
+                    // Guardar datos actuales antes de cambiar
+                    guardarDatosPerfilActual();
+
+                    // Cambiar al nuevo perfil
+                    perfilActual = nuevoId;
+                    localStorage.setItem('perfilActivo', perfilActual);
+
+                    // Recargar la página
+                    location.reload();
+                }
+
+                function guardarDatosPerfilActual() {
+                    if (!window.DataManagement) return;
+
+                    perfiles[perfilActual] = {
+                        nombre: perfiles[perfilActual].nombre,
+                        registros: [...window.DataManagement.registros()],
+                        diasHabiles: window.DataManagement.diasHabiles(),
+                        horasDiarias: window.DataManagement.horasDiarias()
+                    };
+
+                    guardarPerfiles();
+                }
+
+                function cargarDatosPerfilActual() {
+                    if (!window.DataManagement || !perfiles[perfilActual]) return;
+
+                    const perfil = perfiles[perfilActual];
+
+                    // Limpiar registros actuales
+                    const registrosActuales = window.DataManagement.registros();
+                    registrosActuales.splice(0, registrosActuales.length);
+
+                    // Cargar registros del perfil
+                    if (perfil.registros && Array.isArray(perfil.registros)) {
+                        registrosActuales.push(...perfil.registros);
+                    }
+
+                    // Cargar configuración
+                    window.DataManagement.setDiasHabiles(perfil.diasHabiles || 5);
+                    window.DataManagement.setHorasDiarias(perfil.horasDiarias || 7);
+
+                    // Reiniciar registros visibles
+                    window.DataManagement.setRegistrosVisibles(10);
+
+                    // Limpiar historial de deshacer
+                    if (window.HistoryManager) {
+                        window.HistoryManager.clear();
+                        window.HistoryManager.saveState(registrosActuales);
+                    }
+                }
+
+                function crearPerfil() {
+                    const input = document.getElementById('nombre-nuevo-perfil');
+                    if (!input) return;
+
+                    const nombre = S.sanitizeString(input.value.trim(), 30);
+
+                    if (!nombre || nombre.length === 0) {
+                        if (window.UILogic) {
+                            window.UILogic.mostrarToast('Ingresa un nombre para el perfil', 'warning');
+                        }
+                        return;
+                    }
+
+                    // Verificar que no exista un perfil con ese nombre
+                    const existeNombre = Object.values(perfiles).some(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+
+                    if (existeNombre) {
+                        if (window.UILogic) {
+                            window.UILogic.mostrarToast('Ya existe un perfil con ese nombre', 'error');
+                        }
+                        return;
+                    }
+
+                    // Crear ID único
+                    const id = 'perfil_' + Date.now();
+
+                    // Crear nuevo perfil
+                    perfiles[id] = {
+                        nombre: nombre,
+                        registros: [],
+                        diasHabiles: 5,
+                        horasDiarias: 7
+                    };
+
+                    guardarPerfiles();
+                    actualizarSelector();
+
+                    // Limpiar input
+                    input.value = '';
+
+                    if (window.UILogic) {
+                        window.UILogic.mostrarToast(`✅ Perfil "${nombre}" creado`, 'success');
+                    }
+                }
+
+                function eliminarPerfilActual() {
+                    if (perfilActual === 'default') {
+                        if (window.UILogic) {
+                            window.UILogic.mostrarToast('No se puede eliminar el perfil principal', 'error');
+                        }
+                        return;
+                    }
+
+                    const nombrePerfil = perfiles[perfilActual].nombre;
+                    const cantidadRegistros = perfiles[perfilActual].registros?.length || 0;
+
+                    const confirmar = confirm(
+                        `⚠️ ¿Estás seguro?\n\n` +
+                        `Se eliminará el perfil "${nombrePerfil}"\n` +
+                        `con ${cantidadRegistros} registro(s).\n\n` +
+                        `Esta acción NO se puede deshacer.`
+                    );
+
+                    if (!confirmar) return;
+
+                    // Eliminar perfil
+                    delete perfiles[perfilActual];
+
+                    // Cambiar a default
+                    perfilActual = 'default';
+                    localStorage.setItem('perfilActivo', perfilActual);
+
+                    guardarPerfiles();
+                    cargarDatosPerfilActual();
+                    actualizarSelector();
+                    actualizarNombrePerfil();
+
+                    if (window.UILogic) {
+                        window.UILogic.actualizarUI();
+                        window.UILogic.mostrarToast(`🗑️ Perfil eliminado`, 'info');
+                    }
+                }
+
+                function obtenerPerfilActual() {
+                    return perfilActual;
+                }
+
+                function obtenerDatosPerfil() {
+                    return perfiles[perfilActual];
+                }
+
+                return {
+                    inicializar,
+                    cambiarPerfil,
+                    crearPerfil,
+                    eliminarPerfilActual,
+                    guardarDatosPerfilActual,
+                    cargarDatosPerfilActual,
+                    obtenerPerfilActual,
+                    obtenerDatosPerfil
+                };
+            })(SecurityAndUtils);
+
+            // ====================================================================
             // HISTORY MANAGER MODULE
             // ====================================================================
             const HistoryManager = (function () {
@@ -2167,6 +2496,10 @@
                     if (saveSuccessful) {
                         // AQUÍ ENVIAMOS EL ID NUEVO A LA UI
                         UILogic.actualizarUI(idNuevo);
+                    }
+                    // NUEVO: Guardar en el perfil actual
+                    if (window.PerfilManager) {
+                        PerfilManager.guardarDatosPerfilActual();
                     }
                     return saveSuccessful;
                 }
@@ -2628,6 +2961,10 @@
                         return;
                     }
                     guardarYActualizar(true);
+
+                    if (window.PerfilManager) {
+                        PerfilManager.guardarDatosPerfilActual();
+                    }
                     UILogic.mostrarToast('Configuración guardada', 'success');
                     UILogic.cerrarConfig();
                 }
@@ -4518,25 +4855,30 @@ Generado por Sistema de Horarios
                         return;
                     }
 
+                    // NUEVO: Inicializar sistema de perfiles PRIMERO
+                    PerfilManager.inicializar();
+
                     const config = D.cargarConfiguracion();
                     const temaOscuro = config.temaOscuro;
                     D.setVistaActual(config.vistaActual);
 
-                    D.setDiasHabiles(config.diasHabiles);
-                    D.setHorasDiarias(config.horasDiarias);
+                    // Cargar configuración desde el perfil activo
+                    const perfilActual = PerfilManager.obtenerDatosPerfil();
+                    D.setDiasHabiles(perfilActual.diasHabiles || 5);
+                    D.setHorasDiarias(perfilActual.horasDiarias || 7);
 
-                    const registrosCargados = await D.cargarConVerificacion();
+                    // Cargar registros del perfil activo
+                    const registrosCargados = perfilActual.registros || [];
                     D.registros().splice(0, D.registros().length, ...registrosCargados);
 
                     HistoryManager.saveState(D.registros());
                     HistoryManager.updateButtons();
 
-
                     if (localStorage.getItem('horasDiarias') === null) {
-                        localStorage.setItem('horasDiarias', config.horasDiarias);
+                        localStorage.setItem('horasDiarias', D.horasDiarias());
                     }
                     if (localStorage.getItem('diasHabiles') === null) {
-                        localStorage.setItem('diasHabiles', config.diasHabiles);
+                        localStorage.setItem('diasHabiles', D.diasHabiles());
                     }
 
                     const toggleBtn = $('theme-toggle').querySelector('use');
@@ -4572,7 +4914,6 @@ Generado por Sistema de Horarios
                         if (el) el.addEventListener('input', formatearInput);
                     });
 
-
                     window.UILogic = {
                         alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
                         cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
@@ -4581,14 +4922,17 @@ Generado por Sistema de Horarios
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
                         cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
                         cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
-                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones
+                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones,
+                        actualizarFeedbackConfig, poblarSelectorMeses
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
                         mostrarImportar: mostrarImportar, importarDatos: D.importarDatos, borrarTodoHistorial: D.borrarTodoHistorial,
                         guardarEdicion: D.guardarEdicion, eliminarRegistroActual: D.eliminarRegistroActual, cargarMasRegistros: D.cargarMasRegistros,
                         undoAction: D.undoAction, redoAction: D.redoAction, aplicarFiltros: D.aplicarFiltros,
-                        limpiarFiltros: D.limpiarFiltros, registrarVacaciones: D.registrarVacaciones, borrarPeriodo: D.borrarPeriodo
+                        limpiarFiltros: D.limpiarFiltros, registrarVacaciones: D.registrarVacaciones, borrarPeriodo: D.borrarPeriodo,
+                        registros: D.registros, diasHabiles: D.diasHabiles, horasDiarias: D.horasDiarias,
+                        setDiasHabiles: D.setDiasHabiles, setHorasDiarias: D.setHorasDiarias, setRegistrosVisibles: D.setRegistrosVisibles
                     };
                     window.HistoryManager = {
                         undo: D.undoAction,
@@ -4597,13 +4941,15 @@ Generado por Sistema de Horarios
                     window.PWAInstaller = {
                         instalarApp: PWAInstaller.instalarApp
                     };
+                    // NUEVO: Exponer PerfilManager globalmente
+                    window.PerfilManager = PerfilManager;
 
                     // Inicializar PWA Installer
                     PWAInstaller.init();
 
                     actualizarUI();
                     setInterval(() => actualizarUI(null, true), 60000);
-                    console.log('Sistema iniciado correctamente Luigibosca');
+                    console.log('Sistema iniciado correctamente con perfiles Luigibosca');
                 }
 
                 function mostrarFiltros() {
@@ -4706,6 +5052,7 @@ Generado por Sistema de Horarios
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
                     toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
+                    actualizarFeedbackConfig, poblarSelectorMeses
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -4795,10 +5142,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.25
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.27
     // ====================================================================
-    1) cambios en horarios despues de las 00hs
-    2) se suprime la confirmacion al borrar registros por lotes
+    1) agregado sistema de perfiles
 
 
     -->
