@@ -1044,11 +1044,6 @@
                     <use href="#icon-install" />
                 </svg>
             </button>
-            <button class="icon-btn" id="theme-toggle" onclick="UILogic.alternarTema()">
-                <svg class="icon">
-                    <use href="#icon-moon" />
-                </svg>
-            </button>
             <button class="icon-btn" onclick="UILogic.mostrarConfig()">
                 <svg class="icon">
                     <use href="#icon-settings" />
@@ -1239,8 +1234,18 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.28</span> <!-- Version -->
+                <span class="version-text">v6.27</span> <!-- Version -->
             </h3>
+            <div class="form-group">
+                <label>Tema</label>
+                <button class="icon-btn" id="theme-toggle-modal" onclick="UILogic.alternarTema()"
+                    style="width: 100%; background: var(--border);">
+                    <svg class="icon">
+                        <use href="#icon-moon" />
+                    </svg>
+                    <span id="theme-text">Modo Oscuro</span>
+                </button>
+            </div>
             <div class="form-group">
                 <label>Horas diarias</label>
                 <div class="input-number-group">
@@ -1258,31 +1263,13 @@
                 </div>
                 <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
             </div>
-            <div class="form-group">
-                <label>📍 Gestión de Perfiles</label>
-                <div class="input-with-btn">
-                    <input type="text" id="nombre-nuevo-perfil" placeholder="Nombre del perfil..." maxlength="30" />
-                    <button class="time-btn" onclick="PerfilManager.crearPerfil()" title="Crear perfil">
-                        <svg class="icon">
-                            <use href="#icon-plus" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="config-hint-text" style="text-align: left; margin-top: 0.5rem;">
-                    Perfil actual: <strong id="perfil-actual-nombre">Principal</strong>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Eliminar perfil actual</label>
-                <button class="btn-delete" onclick="PerfilManager.eliminarPerfilActual()" id="btn-eliminar-perfil">
-                    <svg class="icon">
-                        <use href="#icon-trash" />
-                    </svg>
-                    Eliminar perfil
-                </button>
-            </div>
             <div class="config-actions">
+                <button class="btn-backup" onclick="UILogic.mostrarPerfiles()">
+                    <svg class="icon">
+                        <use href="#icon-lock" />
+                    </svg>
+                    Gestión de Perfiles
+                </button>
                 <button class="btn-export" onclick="DataManagement.exportarJSON()"><svg class="icon">
                         <use href="#icon-download" />
                     </svg> Exportar</button>
@@ -1571,6 +1558,61 @@
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-perfiles">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-lock" />
+                    </svg>
+                    Gestión de Perfiles
+                </span>
+            </h3>
+            <div class="form-group">
+                <label>Perfil Actual</label>
+                <div class="input-with-btn">
+                    <input type="text" id="nombre-perfil-actual" placeholder="Nombre del perfil..." maxlength="30" />
+                    <button class="time-btn" onclick="PerfilManager.renombrarPerfilActual()" title="Guardar nombre">
+                        <svg class="icon">
+                            <use href="#icon-save" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="config-hint-text" style="text-align: left; margin-top: 0.5rem;">
+                    ID: <strong id="perfil-actual-id">default</strong>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Crear Nuevo Perfil</label>
+                <div class="input-with-btn">
+                    <input type="text" id="nombre-nuevo-perfil" placeholder="Nombre del perfil..." maxlength="30" />
+                    <button class="time-btn" onclick="PerfilManager.crearPerfil()" title="Crear perfil">
+                        <svg class="icon">
+                            <use href="#icon-plus" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Eliminar Perfil Actual</label>
+                <button class="btn-delete" onclick="PerfilManager.eliminarPerfilActual()"
+                    id="btn-eliminar-perfil-modal">
+                    <svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg>
+                    Eliminar perfil
+                </button>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarPerfiles()">
+                    <svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg>
                     Cerrar
                 </button>
             </div>
@@ -1972,12 +2014,14 @@
                 }
 
                 function actualizarNombrePerfil() {
-                    const nombreEl = document.getElementById('perfil-actual-nombre');
-                    if (nombreEl && perfiles[perfilActual]) {
-                        nombreEl.textContent = perfiles[perfilActual].nombre;
+                    // Corrección: Usar el ID real del input y .value en lugar de .textContent
+                    const nombreInput = document.getElementById('nombre-perfil-actual');
+                    if (nombreInput && perfiles[perfilActual]) {
+                        nombreInput.value = perfiles[perfilActual].nombre;
                     }
 
-                    const btnEliminar = document.getElementById('btn-eliminar-perfil');
+                    // Corrección: Usar el ID real del botón en el modal
+                    const btnEliminar = document.getElementById('btn-eliminar-perfil-modal');
                     if (btnEliminar) {
                         btnEliminar.disabled = (perfilActual === 'default');
                         btnEliminar.style.opacity = (perfilActual === 'default') ? '0.5' : '1';
@@ -2135,6 +2179,42 @@
                     return perfiles[perfilActual];
                 }
 
+                function renombrarPerfilActual() {
+                    const input = document.getElementById('nombre-perfil-actual');
+                    if (!input) return;
+
+                    const nuevoNombre = S.sanitizeString(input.value.trim(), 30);
+
+                    if (!nuevoNombre || nuevoNombre.length === 0) {
+                        if (window.UILogic) {
+                            window.UILogic.mostrarToast('Ingresa un nombre válido', 'warning');
+                        }
+                        return;
+                    }
+
+                    // Verificar que no exista otro perfil con ese nombre
+                    const existeNombre = Object.entries(perfiles).some(
+                        ([id, p]) => id !== perfilActual && p.nombre.toLowerCase() === nuevoNombre.toLowerCase()
+                    );
+
+                    if (existeNombre) {
+                        if (window.UILogic) {
+                            window.UILogic.mostrarToast('Ya existe un perfil con ese nombre', 'error');
+                        }
+                        return;
+                    }
+
+                    // Actualizar nombre
+                    perfiles[perfilActual].nombre = nuevoNombre;
+                    guardarPerfiles();
+                    actualizarSelector();
+                    actualizarNombrePerfil();
+
+                    if (window.UILogic) {
+                        window.UILogic.mostrarToast(`✅ Perfil renombrado a "${nuevoNombre}"`, 'success');
+                    }
+                }
+
                 return {
                     inicializar,
                     cambiarPerfil,
@@ -2143,8 +2223,10 @@
                     guardarDatosPerfilActual,
                     cargarDatosPerfilActual,
                     obtenerPerfilActual,
-                    obtenerDatosPerfil
+                    obtenerDatosPerfil,
+                    renombrarPerfilActual
                 };
+
             })(SecurityAndUtils);
 
             // ====================================================================
@@ -3009,7 +3091,7 @@
                         return;
                     }
 
-                    const confirmar = confirm(`⚠️ ¿ESTÁS SEGURO?\n\nEsto eliminará TODOS los ${totalRegistros} registros \n\Esta accion se puede DESHACER antes de cerrar la pagina.`);
+                    const confirmar = confirm(`⚠️ ¿ESTÁS SEGURO?\n\nEsto eliminará TODOS los ${totalRegistros} registros \n\nEsta accion se puede DESHACER antes de cerrar la pagina.`);
 
                     if (!confirmar) return;
 
@@ -4268,12 +4350,24 @@
                     let temaOscuro = !D.cargarConfiguracion().temaOscuro;
                     document.body.classList.toggle('dark-mode');
                     try { localStorage.setItem('temaOscuro', temaOscuro); } catch (e) { }
+                    const toggleBtnEl = $('theme-toggle');
+                    if (toggleBtnEl) {
+                        const tBtn = toggleBtnEl.querySelector('use');
+                        if (tBtn) tBtn.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
+                    }
+                    // Actualizar ambos botones (si existen)
+                    const toggleBtnModal = $('theme-toggle-modal');
+                    const toggleBtnText = $('theme-text');
 
-                    const toggleBtn = $('theme-toggle').querySelector('use');
-                    if (temaOscuro) {
-                        toggleBtn.setAttribute('href', '#icon-sun');
-                    } else {
-                        toggleBtn.setAttribute('href', '#icon-moon');
+                    if (toggleBtnModal) {
+                        const icon = toggleBtnModal.querySelector('use');
+                        if (temaOscuro) {
+                            icon.setAttribute('href', '#icon-sun');
+                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Claro';
+                        } else {
+                            icon.setAttribute('href', '#icon-moon');
+                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Oscuro';
+                        }
                     }
                 }
 
@@ -4361,11 +4455,48 @@
                     $('config-dias-habiles').value = D.diasHabiles();
                     $('config-horas-diarias').value = D.horasDiarias();
                     actualizarFeedbackConfig();
+
+                    // Actualizar estado del botón de tema
+                    const temaOscuro = D.cargarConfiguracion().temaOscuro;
+                    const toggleBtnModal = $('theme-toggle-modal');
+                    const toggleBtnText = $('theme-text');
+
+                    if (toggleBtnModal) {
+                        const icon = toggleBtnModal.querySelector('use');
+                        if (temaOscuro) {
+                            icon.setAttribute('href', '#icon-sun');
+                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Claro';
+                        } else {
+                            icon.setAttribute('href', '#icon-moon');
+                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Oscuro';
+                        }
+                    }
+
                     $('modal-config').classList.add('show');
                 }
 
                 function cerrarConfig() {
                     $('modal-config').classList.remove('show');
+                }
+
+                function mostrarPerfiles() {
+                    const perfilActual = window.PerfilManager.obtenerDatosPerfil();
+                    const perfilId = window.PerfilManager.obtenerPerfilActual();
+
+                    $('nombre-perfil-actual').value = perfilActual.nombre;
+                    $('perfil-actual-id').textContent = perfilId;
+
+                    const btnEliminar = $('btn-eliminar-perfil-modal');
+                    if (btnEliminar) {
+                        btnEliminar.disabled = (perfilId === 'default');
+                        btnEliminar.style.opacity = (perfilId === 'default') ? '0.5' : '1';
+                    }
+
+                    $('modal-perfiles').classList.add('show');
+                }
+
+                function cerrarPerfiles() {
+                    $('modal-perfiles').classList.remove('show');
                 }
 
                 function cerrarEdicion() {
@@ -4899,76 +5030,10 @@ Generado por Sistema de Horarios
                         return;
                     }
 
-                    // NUEVO: Inicializar sistema de perfiles PRIMERO
+                    // 1. INICIALIZAR SISTEMAS Y EXPONER VARIABLES GLOBALES PRIMERO
+                    // Esto asegura que los botones funcionen aunque falle la interfaz gráfica después
                     PerfilManager.inicializar();
 
-                    const config = D.cargarConfiguracion();
-                    const temaOscuro = config.temaOscuro;
-                    D.setVistaActual(config.vistaActual);
-
-                    // Cargar configuración desde el perfil activo
-                    const perfilActual = PerfilManager.obtenerDatosPerfil();
-                    D.setDiasHabiles(perfilActual.diasHabiles || 5);
-                    D.setHorasDiarias(perfilActual.horasDiarias || 7);
-
-                    // Cargar registros del perfil activo
-                    const registrosCargados = perfilActual.registros || [];
-                    D.registros().splice(0, D.registros().length, ...registrosCargados);
-
-                    HistoryManager.saveState(D.registros());
-                    HistoryManager.updateButtons();
-
-                    if (localStorage.getItem('horasDiarias') === null) {
-                        localStorage.setItem('horasDiarias', D.horasDiarias());
-                    }
-                    if (localStorage.getItem('diasHabiles') === null) {
-                        localStorage.setItem('diasHabiles', D.diasHabiles());
-                    }
-
-                    const toggleBtn = $('theme-toggle').querySelector('use');
-                    if (temaOscuro) {
-                        document.body.classList.add('dark-mode');
-                        toggleBtn.setAttribute('href', '#icon-sun');
-                    } else {
-                        toggleBtn.setAttribute('href', '#icon-moon');
-                    }
-
-                    $('fecha').value = obtenerFechaHoy();
-                    try {
-                        const formExpandido = localStorage.getItem('formularioExpandido') === 'true';
-                        if (formExpandido) {
-                            toggleFormulario();
-                        }
-                    } catch (e) { }
-
-                    try {
-                        const statsExpandido = localStorage.getItem('statsExpandido') === 'true';
-                        if (statsExpandido) { toggleStats(); }
-                    } catch (e) { }
-
-                    try {
-                        const botonesExpandido = localStorage.getItem('botonesHistoricoExpandido') === 'true';
-                        if (botonesExpandido) {
-                            toggleBotonesHistorico();
-                        }
-                    } catch (e) { }
-
-                    ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'].forEach(id => {
-                        const el = $(id);
-                        if (el) el.addEventListener('input', formatearInput);
-                    });
-
-                    window.UILogic = {
-                        alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
-                        cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
-                        mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
-                        incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
-                        incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
-                        cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
-                        cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
-                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones,
-                        actualizarFeedbackConfig, poblarSelectorMeses
-                    };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
                         mostrarImportar: mostrarImportar, importarDatos: D.importarDatos, borrarTodoHistorial: D.borrarTodoHistorial,
@@ -4978,22 +5043,78 @@ Generado por Sistema de Horarios
                         registros: D.registros, diasHabiles: D.diasHabiles, horasDiarias: D.horasDiarias,
                         setDiasHabiles: D.setDiasHabiles, setHorasDiarias: D.setHorasDiarias, setRegistrosVisibles: D.setRegistrosVisibles
                     };
-                    window.HistoryManager = {
-                        undo: D.undoAction,
-                        redo: D.redoAction
-                    };
-                    window.PWAInstaller = {
-                        instalarApp: PWAInstaller.instalarApp
-                    };
-                    // NUEVO: Exponer PerfilManager globalmente
-                    window.PerfilManager = PerfilManager;
+                    window.HistoryManager = { undo: D.undoAction, redo: D.redoAction };
+                    window.PWAInstaller = { instalarApp: PWAInstaller.instalarApp };
+                    window.PerfilManager = PerfilManager; // <--- AHORA ESTÁ AQUÍ ARRIBA
 
-                    // Inicializar PWA Installer
+                    // Exponemos UILogic aquí mismo para asegurar disponibilidad
+                    window.UILogic = {
+                        alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
+                        cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
+                        mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
+                        incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
+                        incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
+                        cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
+                        cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
+                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones,
+                        actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles, init // Agregamos init por si acaso
+                    };
+
+                    // 2. CARGAR CONFIGURACIÓN
+                    const config = D.cargarConfiguracion();
+                    const temaOscuro = config.temaOscuro;
+                    D.setVistaActual(config.vistaActual);
+
+                    const perfilActual = PerfilManager.obtenerDatosPerfil();
+                    D.setDiasHabiles(perfilActual.diasHabiles || 5);
+                    D.setHorasDiarias(perfilActual.horasDiarias || 7);
+
+                    const registrosCargados = perfilActual.registros || [];
+                    D.registros().splice(0, D.registros().length, ...registrosCargados);
+
+                    HistoryManager.saveState(D.registros());
+                    HistoryManager.updateButtons();
+
+                    // 3. INTERFAZ GRÁFICA (TEMA) - Versión Segura
+                    if (temaOscuro) {
+                        document.body.classList.add('dark-mode');
+                    }
+                    // Intentar actualizar botones de tema si existen
+                    const toggleBtnEl = $('theme-toggle');
+                    if (toggleBtnEl) {
+                        const tBtn = toggleBtnEl.querySelector('use');
+                        if (tBtn) tBtn.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
+                    }
+                    const toggleBtnModal = $('theme-toggle-modal');
+                    if (toggleBtnModal) {
+                        const tBtnM = toggleBtnModal.querySelector('use');
+                        const tTxt = $('theme-text');
+                        if (tBtnM) tBtnM.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
+                        if (tTxt) tTxt.textContent = temaOscuro ? 'Modo Claro' : 'Modo Oscuro';
+                    }
+
+                    $('fecha').value = obtenerFechaHoy();
+
+                    // 4. LISTENERS E INTERACTIVIDAD
+                    ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'].forEach(id => {
+                        const el = $(id);
+                        if (el) el.addEventListener('input', formatearInput);
+                    });
+
+                    // 5. RESTAURAR ESTADO VISUAL (Con protección try-catch para evitar crash si moviste cosas)
+                    try {
+                        if (localStorage.getItem('formularioExpandido') === 'true') toggleFormulario();
+                        if (localStorage.getItem('statsExpandido') === 'true') toggleStats();
+                        if (localStorage.getItem('botonesHistoricoExpandido') === 'true') toggleBotonesHistorico();
+                    } catch (e) { console.warn('Error restaurando estado visual:', e); }
+
+                    // Inicializar PWA
                     PWAInstaller.init();
 
+                    // Primera actualización de UI
                     actualizarUI();
                     setInterval(() => actualizarUI(null, true), 60000);
-                    console.log('Sistema iniciado correctamente con perfiles Luigibosca');
+                    console.log('Sistema iniciado correctamente v6.29');
                 }
 
                 function mostrarFiltros() {
@@ -5096,7 +5217,7 @@ Generado por Sistema de Horarios
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
                     toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
-                    actualizarFeedbackConfig, poblarSelectorMeses
+                    actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -5186,9 +5307,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.28
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.29
     // ====================================================================
-    1) cambio del funcionamiento del timer
+    1) correccion de modales
 
 
     -->
