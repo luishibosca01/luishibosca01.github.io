@@ -837,47 +837,6 @@
             text-decoration: none;
         }
 
-        .header {
-            background: var(--bg-header);
-            padding: 0.3rem;
-            box-shadow: var(--shadow);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header h1 {
-            font-size: 1.25rem;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* Nuevo: Selector de perfil */
-        #selector-perfil {
-            font-size: 1rem;
-            padding: 0.25rem 0.5rem;
-            border: 2px solid var(--border);
-            border-radius: 6px;
-            background: var(--input-bg);
-            color: var(--text-main);
-            cursor: pointer;
-            max-width: 200px;
-        }
-
-        #selector-perfil:hover {
-            border-color: var(--text-muted);
-        }
-
-        #selector-perfil:focus {
-            outline: none;
-            border-color: var(--input-focus);
-        }
-
         /* Estilos para meses colapsables */
         .registro-mes-container {
             margin: 0;
@@ -901,14 +860,7 @@
 
         .registro-mes-detalle {
             overflow: hidden;
-            max-height: 0;
-            opacity: 0;
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-        }
-
-        .registro-mes-detalle.expanded {
-            max-height: 10000px;
-            opacity: 1;
+            transition: all 0.3s ease-out;
         }
 
         .chevron-mes {
@@ -920,6 +872,7 @@
             flex-shrink: 0;
             transition: transform 0.3s ease;
         }
+        
     </style>
 </head>
 
@@ -1038,6 +991,14 @@
             <line x1="12" y1="20" x2="12" y2="4" class="icon-line" stroke="currentColor"></line>
             <line x1="6" y1="20" x2="6" y2="14" class="icon-line" stroke="currentColor"></line>
         </symbol>
+        <symbol id="icon-merge" viewBox="0 0 24 24">
+            <line x1="6" y1="6" x2="12" y2="12" class="icon-line" stroke="currentColor"></line>
+            <line x1="18" y1="6" x2="12" y2="12" class="icon-line" stroke="currentColor"></line>
+            <line x1="12" y1="12" x2="12" y2="18" class="icon-line" stroke="currentColor"></line>
+            <circle cx="6" cy="6" r="2" fill="currentColor"></circle>
+            <circle cx="18" cy="6" r="2" fill="currentColor"></circle>
+            <circle cx="12" cy="18" r="2" fill="currentColor"></circle>
+        </symbol>
         <symbol id="icon-plus" viewBox="0 0 24 24">
             <line x1="12" y1="5" x2="12" y2="19" class="icon-line" stroke="currentColor"></line>
             <line x1="5" y1="12" x2="19" y2="12" class="icon-line" stroke="currentColor"></line>
@@ -1063,19 +1024,21 @@
             <path d="M7 11V7a5 5 0 0 1 9.9-1" class="icon-line" stroke="currentColor"></path>
         </symbol>
     </svg>
+
     <div class="header">
-        <h1>
-            <svg class="icon">
+        <h1><svg class="icon">
                 <use href="#icon-clock" />
-            </svg>
-            <select id="selector-perfil" onchange="PerfilManager.cambiarPerfil()">
-            </select>
-        </h1>
+            </svg> Horarios</h1>
         <div class="header-buttons">
             <button class="icon-btn" id="btn-install" style="display: none;" onclick="PWAInstaller.instalarApp()"
                 title="Instalar aplicación">
                 <svg class="icon">
                     <use href="#icon-install" />
+                </svg>
+            </button>
+            <button class="icon-btn" id="theme-toggle" onclick="UILogic.alternarTema()">
+                <svg class="icon">
+                    <use href="#icon-moon" />
                 </svg>
             </button>
             <button class="icon-btn" onclick="UILogic.mostrarConfig()">
@@ -1268,19 +1231,8 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.33</span>
+                <span class="version-text">v6.25</span> <!-- Version -->
             </h3>
-
-            <div class="form-group">
-                <label>Tema</label>
-                <button class="icon-btn" id="theme-toggle-modal" onclick="UILogic.alternarTema()"
-                    style="width: 100%; background: var(--border);">
-                    <svg class="icon">
-                        <use href="#icon-moon" />
-                    </svg>
-                    <span id="theme-text">Modo Oscuro</span>
-                </button>
-            </div>
             <div class="form-group">
                 <label>Horas diarias</label>
                 <div class="input-number-group">
@@ -1299,23 +1251,18 @@
                 <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
             </div>
             <div class="config-actions">
-                <button class="btn-group" onclick="UILogic.mostrarPerfiles()">
-                    <svg class="icon">
-                        <use href="#icon-lock" />
-                    </svg>
-                    Gestión de Perfiles
-                </button>
-                <button class="btn-group" onclick="UILogic.mostrarRespaldo()">
-                    <svg class="icon">
-                        <use href="#icon-save" />
-                    </svg>
-                    Respaldo y Datos
-                </button>
-                <button class="btn-group" onclick="UILogic.mostrarAyuda()">
-                    <svg class="icon">
+                <button class="btn-export" onclick="DataManagement.exportarJSON()"><svg class="icon">
+                        <use href="#icon-download" />
+                    </svg> Exportar</button>
+                <button class="btn-backup" onclick="UILogic.mostrarImportar()"><svg class="icon">
+                        <use href="#icon-upload" />
+                    </svg> Importar</button>
+                <button class="btn-delete" onclick="DataManagement.borrarTodoHistorial()"><svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg>Borrar registros</button>
+                <button class="btn-group" onclick="UILogic.mostrarAyuda()"><svg class="icon">
                         <use href="#icon-help" />
-                    </svg>
-                    Ayuda
+                    </svg>Información
                 </button>
             </div>
             <div class="btn-group">
@@ -1328,51 +1275,7 @@
             </div>
         </div>
     </div>
-    <div class="modal" id="modal-respaldo">
-        <div class="modal-content">
-            <h3>
-                <span class="modal-title-block">
-                    <svg class="icon">
-                        <use href="#icon-save" />
-                    </svg>
-                    Respaldo y Datos
-                </span>
-            </h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-                Administra tus registros, exporta copias de seguridad o importa datos externos.
-            </p>
-            <div class="config-actions">
-                <button class="btn-export" onclick="DataManagement.exportarJSON()">
-                    <svg class="icon">
-                        <use href="#icon-download" />
-                    </svg>
-                    Exportar Datos
-                </button>
 
-                <button class="btn-backup" onclick="UILogic.mostrarImportar()">
-                    <svg class="icon">
-                        <use href="#icon-upload" />
-                    </svg>
-                    Importar Datos
-                </button>
-
-                <button class="btn-delete" onclick="DataManagement.borrarTodoHistorial()">
-                    <svg class="icon">
-                        <use href="#icon-trash" />
-                    </svg>
-                    Borrar Registros
-                </button>
-            </div>
-
-            <div class="btn-group">
-                <button class="btn-cancel" onclick="UILogic.cerrarRespaldo()">
-                    <svg class="icon">
-                        <use href="#icon-undo" />
-                    </svg> Volver
-                </button>
-            </div>
-        </div>
-    </div>
     <div class="modal" id="modal-editar">
         <div class="modal-content">
             <h3>
@@ -1466,9 +1369,9 @@
                 </button>
                 <button class="btn-cancel" onclick="UILogic.cerrarImportar()">
                     <svg class="icon">
-                        <use href="#icon-undo" />
+                        <use href="#icon-cancelar" />
                     </svg>
-                    Volver
+                    Cancelar
                 </button>
             </div>
         </div>
@@ -1527,7 +1430,7 @@
                     <svg class="icon">
                         <use href="#icon-help" />
                     </svg>
-                    Ayuda
+                    Información
                 </span>
             </h3>
             <div class="ayuda-scroll-container"
@@ -1636,60 +1539,6 @@
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
-                    Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
-    <div class="modal" id="modal-perfiles">
-        <div class="modal-content">
-            <h3>
-                <span class="modal-title-block">
-                    <svg class="icon">
-                        <use href="#icon-lock" />
-                    </svg>
-                    Gestión de Perfiles
-                </span>
-            </h3>
-            <div class="form-group">
-                <label>Perfil Actual</label>
-                <div class="input-with-btn">
-                    <input type="text" id="nombre-perfil-actual" placeholder="Nombre del perfil..." maxlength="30" />
-                    <button class="time-btn" onclick="PerfilManager.renombrarPerfilActual()" title="Guardar nombre">
-                        <svg class="icon">
-                            <use href="#icon-save" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="config-hint-text" style="text-align: left; margin-top: 0.5rem;">
-                    ID: <strong id="perfil-actual-id">default</strong>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Agregar Perfil</label>
-                <div class="input-with-btn">
-                    <input type="text" id="nombre-nuevo-perfil" placeholder="Nombre del perfil..." maxlength="30" />
-                    <button class="time-btn" onclick="PerfilManager.crearPerfil()" title="Crear perfil">
-                        <svg class="icon">
-                            <use href="#icon-plus" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="form-group">
-                <button class="btn-delete" onclick="PerfilManager.eliminarPerfilActual()"
-                    id="btn-eliminar-perfil-modal">
-                    <svg class="icon">
-                        <use href="#icon-trash" />
-                    </svg>
-                    Eliminar perfil
-                </button>
-            </div>
-            <div class="btn-group">
-                <button class="btn-cancel" onclick="UILogic.cerrarPerfiles()">
-                    <svg class="icon">
-                        <use href="#icon-cancelar" />
-                    </svg>
                     Cerrar
                 </button>
             </div>
@@ -1979,269 +1828,6 @@
             })();
 
             // ====================================================================
-            // PERFIL MANAGER MODULE (CON MIGRACION TRANSPARENTE MEJORADA)
-            // ====================================================================
-            const PerfilManager = (function (S) {
-                const MAX_PERFILES = 5;
-                let perfilActual = 'default';
-                let perfiles = {};
-
-                function inicializar() {
-                    cargarPerfiles();
-                    actualizarSelector();
-                    actualizarNombrePerfil();
-                }
-
-                function cargarPerfiles() {
-                    try {
-                        const storedPerfiles = localStorage.getItem('perfiles');
-                        const storedLegacyRegistros = localStorage.getItem('registros'); // Datos de la v6.16
-
-                        // --- MIGRACIÓN TRANSPARENTE ---
-                        // Si NO hay perfiles nuevos, pero SÍ hay datos viejos, migramos automáticamente.
-                        if (!storedPerfiles && storedLegacyRegistros) {
-                            console.log("🔄 Detectada versión anterior. Migrando datos...");
-
-                            let registrosViejos = [];
-                            try {
-                                const parsed = JSON.parse(storedLegacyRegistros);
-                                // En v6.16 los registros estaban dentro de un objeto { registros: [], hash: ... }
-                                if (parsed.registros && Array.isArray(parsed.registros)) {
-                                    registrosViejos = parsed.registros;
-                                } else if (Array.isArray(parsed)) {
-                                    registrosViejos = parsed; // Por si acaso es una versión muy vieja
-                                }
-                            } catch (e) { console.error("Error leyendo datos viejos", e); }
-
-                            // Recuperar configuración vieja
-                            const diasViejos = parseFloat(localStorage.getItem('diasHabiles')) || 5;
-                            const horasViejas = parseFloat(localStorage.getItem('horasDiarias')) || 7;
-
-                            // Crear la estructura nueva con los datos viejos
-                            perfiles = {
-                                'default': {
-                                    nombre: 'Principal',
-                                    registros: registrosViejos,
-                                    diasHabiles: diasViejos,
-                                    horasDiarias: horasViejas
-                                }
-                            };
-                            perfilActual = 'default';
-
-                            // Guardamos inmediatamente la nueva estructura
-                            guardarPerfiles();
-                            // NO borramos 'registros' (legacy) para que sirva de backup de seguridad
-                            return;
-                        }
-                        // -------------------------------
-
-                        // Carga normal si ya existe la estructura nueva o es una instalación limpia
-                        perfiles = storedPerfiles ? JSON.parse(storedPerfiles) : {};
-
-                        // Crear perfil default si no existe y no hubo migración
-                        if (!perfiles['default'] && Object.keys(perfiles).length === 0) {
-                            perfiles['default'] = {
-                                nombre: 'Principal',
-                                registros: [],
-                                diasHabiles: 5,
-                                horasDiarias: 7
-                            };
-                        }
-
-                        // Asegurar que haya un perfil seleccionado válido
-                        perfilActual = localStorage.getItem('perfilActivo') || 'default';
-                        if (!perfiles[perfilActual]) {
-                            // Si el perfil activo guardado ya no existe, usar el primero disponible o default
-                            const availableIds = Object.keys(perfiles);
-                            perfilActual = availableIds.length > 0 ? availableIds[0] : 'default';
-                        }
-
-                    } catch (e) {
-                        console.error('Error cargando perfiles:', e);
-                        // Fallback de emergencia
-                        perfiles = {
-                            'default': { nombre: 'Principal', registros: [], diasHabiles: 5, horasDiarias: 7 }
-                        };
-                        perfilActual = 'default';
-                    }
-                }
-
-                function guardarPerfiles() {
-                    try {
-                        localStorage.setItem('perfiles', JSON.stringify(perfiles));
-                        localStorage.setItem('perfilActivo', perfilActual);
-                        return true;
-                    } catch (e) {
-                        console.error('Error guardando perfiles:', e);
-                        return false;
-                    }
-                }
-
-                function actualizarSelector() {
-                    const selector = document.getElementById('selector-perfil');
-                    if (!selector) return;
-
-                    selector.innerHTML = '';
-
-                    // Ordenar perfiles: default primero, luego alfabético
-                    const perfilesOrdenados = Object.entries(perfiles).sort((a, b) => {
-                        if (a[0] === 'default') return -1;
-                        if (b[0] === 'default') return 1;
-                        return a[1].nombre.localeCompare(b[1].nombre);
-                    });
-
-                    perfilesOrdenados.forEach(([id, perfil]) => {
-                        const option = document.createElement('option');
-                        option.value = id;
-                        option.textContent = perfil.nombre;
-                        if (id === perfilActual) {
-                            option.selected = true;
-                        }
-                        selector.appendChild(option);
-                    });
-                }
-
-                function actualizarNombrePerfil() {
-                    const nombreInput = document.getElementById('nombre-perfil-actual');
-                    if (nombreInput && perfiles[perfilActual]) {
-                        nombreInput.value = perfiles[perfilActual].nombre;
-                    }
-                    const btnEliminar = document.getElementById('btn-eliminar-perfil-modal');
-                    if (btnEliminar) {
-                        btnEliminar.disabled = (perfilActual === 'default');
-                        btnEliminar.style.opacity = (perfilActual === 'default') ? '0.5' : '1';
-                    }
-                }
-
-                function cambiarPerfil() {
-                    const selector = document.getElementById('selector-perfil');
-                    if (!selector) return;
-                    const nuevoId = selector.value;
-                    if (nuevoId === perfilActual) return;
-
-                    // Guardar datos actuales antes de cambiar
-                    guardarDatosPerfilActual();
-
-                    // Cambiar al nuevo perfil
-                    perfilActual = nuevoId;
-                    localStorage.setItem('perfilActivo', perfilActual);
-
-                    // Recargar la página para limpiar memoria y estados
-                    location.reload();
-                }
-
-                function guardarDatosPerfilActual() {
-                    if (!window.DataManagement) return;
-
-                    perfiles[perfilActual] = {
-                        nombre: perfiles[perfilActual].nombre,
-                        registros: [...window.DataManagement.registros()],
-                        diasHabiles: window.DataManagement.diasHabiles(),
-                        horasDiarias: window.DataManagement.horasDiarias()
-                    };
-                    guardarPerfiles();
-                }
-
-                function cargarDatosPerfilActual() {
-                    // Esta función es llamada por DataManagement al iniciar
-                    if (!perfiles[perfilActual]) return null;
-                    return perfiles[perfilActual];
-                }
-
-                function crearPerfil() {
-                    const input = document.getElementById('nombre-nuevo-perfil');
-                    if (!input) return;
-                    const nombre = S.sanitizeString(input.value.trim(), 30);
-
-                    if (!nombre || nombre.length === 0) {
-                        if (window.UILogic) window.UILogic.mostrarToast('Ingresa un nombre para el perfil', 'warning');
-                        return;
-                    }
-                    if (Object.keys(perfiles).length >= MAX_PERFILES) {
-                        if (window.UILogic) window.UILogic.mostrarToast(
-                            `Máximo ${MAX_PERFILES} perfiles. Elimina uno para crear otro.`,
-                            'error'
-                        );
-                        return;
-                    }
-
-                    const existeNombre = Object.values(perfiles).some(
-                        p => p.nombre.toLowerCase() === nombre.toLowerCase()
-                    );
-                    if (existeNombre) {
-                        if (window.UILogic) window.UILogic.mostrarToast('Ya existe un perfil con ese nombre', 'error');
-                        return;
-                    }
-
-                    const id = 'perfil_' + Date.now();
-                    perfiles[id] = {
-                        nombre: nombre,
-                        registros: [],
-                        diasHabiles: 5,
-                        horasDiarias: 7
-                    };
-
-                    guardarPerfiles();
-                    actualizarSelector();
-                    input.value = '';
-
-                    if (window.UILogic) window.UILogic.mostrarToast(`✅ Perfil "${nombre}" creado (${Object.keys(perfiles).length}/${MAX_PERFILES})`, 'success');
-                }
-
-                function eliminarPerfilActual() {
-                    if (perfilActual === 'default') {
-                        if (window.UILogic) window.UILogic.mostrarToast('No se puede eliminar el perfil principal', 'error');
-                        return;
-                    }
-                    const nombrePerfil = perfiles[perfilActual].nombre;
-                    const cantidadRegistros = perfiles[perfilActual].registros?.length || 0;
-
-                    const confirmar = confirm(`⚠️ ¿Estás seguro?\nSe eliminará el perfil "${nombrePerfil}" con ${cantidadRegistros} registros.\nEsta acción NO se puede deshacer.`);
-                    if (!confirmar) return;
-
-                    delete perfiles[perfilActual];
-                    perfilActual = 'default';
-                    localStorage.setItem('perfilActivo', perfilActual);
-
-                    guardarPerfiles();
-                    location.reload(); // Recargar para volver al default limpio
-                }
-
-                function obtenerPerfilActual() { return perfilActual; }
-                function obtenerDatosPerfil() { return perfiles[perfilActual]; }
-
-                function renombrarPerfilActual() {
-                    const input = document.getElementById('nombre-perfil-actual');
-                    if (!input) return;
-                    const nuevoNombre = S.sanitizeString(input.value.trim(), 30);
-
-                    if (!nuevoNombre || nuevoNombre.length === 0) {
-                        if (window.UILogic) window.UILogic.mostrarToast('Ingresa un nombre válido', 'warning');
-                        return;
-                    }
-                    const existeNombre = Object.entries(perfiles).some(
-                        ([id, p]) => id !== perfilActual && p.nombre.toLowerCase() === nuevoNombre.toLowerCase()
-                    );
-                    if (existeNombre) {
-                        if (window.UILogic) window.UILogic.mostrarToast('Ya existe un perfil con ese nombre', 'error');
-                        return;
-                    }
-                    perfiles[perfilActual].nombre = nuevoNombre;
-                    guardarPerfiles();
-                    actualizarSelector();
-                    actualizarNombrePerfil();
-                    if (window.UILogic) window.UILogic.mostrarToast(`✅ Perfil renombrado a "${nuevoNombre}"`, 'success');
-                }
-
-                return {
-                    inicializar, cambiarPerfil, crearPerfil, eliminarPerfilActual,
-                    guardarDatosPerfilActual, cargarDatosPerfilActual,
-                    obtenerPerfilActual, obtenerDatosPerfil, renombrarPerfilActual
-                };
-
-            })(SecurityAndUtils);
-
-            // ====================================================================
             // HISTORY MANAGER MODULE
             // ====================================================================
             const HistoryManager = (function () {
@@ -2327,6 +1913,15 @@
                     updateButtons();
                 }
 
+                function getDebugInfo() {
+                    return {
+                        historyLength: history.length,
+                        currentIndex: currentIndex,
+                        canUndo: canUndo(),
+                        canRedo: canRedo()
+                    };
+                }
+
                 return {
                     saveState,
                     undo,
@@ -2335,6 +1930,7 @@
                     canRedo,
                     updateButtons,
                     clear,
+                    getDebugInfo
                 };
             })();
 
@@ -2608,10 +2204,6 @@
                     if (saveSuccessful) {
                         // AQUÍ ENVIAMOS EL ID NUEVO A LA UI
                         UILogic.actualizarUI(idNuevo);
-                    }
-                    // NUEVO: Guardar en el perfil actual
-                    if (window.PerfilManager) {
-                        PerfilManager.guardarDatosPerfilActual();
                     }
                     return saveSuccessful;
                 }
@@ -2888,11 +2480,9 @@
                         const hoy = UILogic.obtenerFechaHoy();
 
                         if (registroABorrar && registroABorrar.fecha === hoy) {
-                            // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
-                            const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
-                            const storageKey = `breakStartTime_${perfilId}`;
-                            if (localStorage.getItem(storageKey)) {
-                                localStorage.removeItem(storageKey);
+                            // Si existe un timer activo, lo eliminamos
+                            if (localStorage.getItem('breakStartTime')) {
+                                localStorage.removeItem('breakStartTime');
                                 UILogic.mostrarToast('Timer detenido al borrar el registro', 'info');
                             }
                         }
@@ -2978,10 +2568,7 @@
                         // Si ambos campos están vacíos, eliminar el registro
                         const registroABorrar = registros.find(r => r.id === editandoId);
                         if (registroABorrar && registroABorrar.fecha === UILogic.obtenerFechaHoy()) {
-                            // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
-                            const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
-                            const storageKey = `breakStartTime_${perfilId}`;
-                            localStorage.removeItem(storageKey);
+                            localStorage.removeItem('breakStartTime');
                             UILogic.actualizarEstadoBotonTimerMain();
                         }
                         registros = registros.filter(r => r.id !== editandoId);
@@ -3078,10 +2665,6 @@
                         return;
                     }
                     guardarYActualizar(true);
-
-                    if (window.PerfilManager) {
-                        PerfilManager.guardarDatosPerfilActual();
-                    }
                     UILogic.mostrarToast('Configuración guardada', 'success');
                     UILogic.cerrarConfig();
                 }
@@ -3093,15 +2676,10 @@
                         return;
                     }
 
-                    const confirmar = confirm(`⚠️ ¿ESTÁS SEGURO?\n\nEsto eliminará TODOS los ${totalRegistros} registros \n\nEsta accion se puede DESHACER antes de cerrar la pagina.`);
+                    const confirmar = confirm(`⚠️ ¿ESTÁS SEGURO?\n\nEsto eliminará TODOS los ${totalRegistros} registros \n\Esta accion se puede DESHACER antes de cerrar la pagina.`);
 
                     if (!confirmar) return;
-
-                    // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
-                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
-                    const storageKey = `breakStartTime_${perfilId}`;
-                    localStorage.removeItem(storageKey);
-
+                    localStorage.removeItem('breakStartTime');
                     registros = [];
                     registrosVisibles = 10;
 
@@ -3121,19 +2699,8 @@
                         if (registrosVisibles > registros.length) {
                             registrosVisibles = registros.length;
                         }
-
-                        // 🔧 Guardar posición de scroll antes de actualizar
-                        const lista = document.getElementById('lista-registros');
-                        const scrollPos = lista ? lista.scrollTop : 0;
-
                         UILogic.actualizarUI();
-
-                        // 🔧 Restaurar posición de scroll
-                        if (lista) {
-                            requestAnimationFrame(() => {
-                                lista.scrollTop = scrollPos;
-                            });
-                        }
+                        $('btn-cargar-mas').scrollIntoView({ behavior: 'smooth', block: 'end' });
                     }
                 }
 
@@ -3796,8 +3363,6 @@
                     const item = document.createElement('div');
                     const hoy = obtenerFechaHoy();
 
-
-
                     let className = r.fecha === hoy ? 'registro-item hoy' : 'registro-item';
 
                     // Si el ID de este registro coincide con el que queremos resaltar...
@@ -3896,52 +3461,6 @@
                     const lista = $('lista-registros');
                     const btnCargarMas = $('btn-cargar-mas');
 
-                    function actualizarVisibilidadBotonCargarMas() {
-                        const limiteVisibles = D.registrosVisibles();
-                        const hoy = obtenerFechaHoy();
-                        const mesHoy = hoy.substring(0, 7);
-
-                        // Obtener meses actualmente expandidos
-                        const mesesExpandidosActuales = new Set();
-                        lista.querySelectorAll('.registro-mes-container').forEach(container => {
-                            const detalle = container.querySelector('.registro-mes-detalle');
-                            if (detalle && detalle.classList.contains('expanded')) {
-                                const header = container.querySelector('.registro-mes-header');
-                                if (header && header.dataset.mesId) {
-                                    mesesExpandidosActuales.add(header.dataset.mesId);
-                                }
-                            }
-                        });
-
-                        // Contar items en meses expandidos
-                        const registrosAMostrar = D.obtenerRegistrosFiltrados();
-                        const gruposPorMes = agruparRegistrosPorMes(registrosAMostrar);
-
-                        let totalItemsExpandidos = 0;
-                        let totalItemsVisiblesExpandidos = 0;
-
-                        gruposPorMes.forEach((registrosDelMes, claveMes) => {
-                            const estaExpandido = mesesExpandidosActuales.has(claveMes) || claveMes === mesHoy;
-                            if (estaExpandido) {
-                                const grupos = agruparRegistrosConsecutivos(registrosDelMes);
-                                totalItemsExpandidos += grupos.length;
-                            }
-                        });
-
-                        // Contar cuántos de esos items están actualmente visibles
-                        totalItemsVisiblesExpandidos = Math.min(limiteVisibles, totalItemsExpandidos);
-
-                        // Mostrar botón solo si hay más items en meses expandidos
-                        if (totalItemsVisiblesExpandidos < totalItemsExpandidos) {
-                            const restantes = totalItemsExpandidos - totalItemsVisiblesExpandidos;
-                            const aCargar = Math.min(10, restantes);
-                            btnCargarMas.style.display = 'flex';
-                            btnCargarMas.title = `Cargar ${aCargar} más (${restantes} restantes)`;
-                        } else {
-                            btnCargarMas.style.display = 'none';
-                        }
-                    }
-
                     // Guardar estado de grupos expandidos
                     const gruposExpandidos = new Set();
                     lista.querySelectorAll('.registro-grupo-detalle[style*="display: block"]').forEach(detalle => {
@@ -3959,7 +3478,7 @@
                     const mesesExpandidos = new Set();
                     lista.querySelectorAll('.registro-mes-container').forEach(container => {
                         const detalle = container.querySelector('.registro-mes-detalle');
-                        if (detalle && detalle.classList.contains('expanded')) {
+                        if (detalle && detalle.style.display === 'block') {
                             const header = container.querySelector('.registro-mes-header');
                             if (header && header.dataset.mesId) {
                                 mesesExpandidos.add(header.dataset.mesId);
@@ -4055,28 +3574,18 @@
                             const esMesActual = mesItem === mesHoy;
                             const debeEstarExpandido = estabaExpandido || esMesActual;
 
+                            detalleMesActual.style.display = debeEstarExpandido ? 'block' : 'none';
                             if (debeEstarExpandido) {
-                                detalleMesActual.classList.add('expanded');
                                 chevron.style.transform = 'rotate(180deg)';
                             }
 
                             // Toggle click - usando closure para capturar las variables correctas
-                            // Toggle click - usando closure para capturar las variables correctas
                             (function (header, detalle, chevronIcon) {
                                 header.onclick = (e) => {
                                     e.stopPropagation();
-                                    const estaExpandido = detalle.classList.contains('expanded');
-
-                                    if (estaExpandido) {
-                                        detalle.classList.remove('expanded');
-                                        chevronIcon.style.transform = 'rotate(0deg)';
-                                    } else {
-                                        detalle.classList.add('expanded');
-                                        chevronIcon.style.transform = 'rotate(180deg)';
-                                    }
-
-                                    // 🔧 ACTUALIZAR BOTÓN "CARGAR MÁS" al cambiar estado del mes
-                                    actualizarVisibilidadBotonCargarMas();
+                                    const estaExpandido = detalle.style.display !== 'none';
+                                    detalle.style.display = estaExpandido ? 'none' : 'block';
+                                    chevronIcon.style.transform = estaExpandido ? 'rotate(0deg)' : 'rotate(180deg)';
                                 };
                             })(headerMes, detalleMesActual, chevron);
 
@@ -4100,25 +3609,8 @@
 
                     lista.appendChild(fragmento);
 
-                    actualizarVisibilidadBotonCargarMas();
-
-                    // Contar cuántos items pertenecen a meses expandidos
-                    const itemsEnMesesExpandidos = itemsAMostrar.filter(itemData => {
-                        const mesItem = itemData.grupo.registros[0].fecha.substring(0, 7);
-                        const estabaExpandido = mesesExpandidos.has(mesItem);
-                        const esMesActual = mesItem === mesHoy;
-                        return estabaExpandido || esMesActual;
-                    }).length;
-
                     const totalItems = soloItems.length;
-                    const hayMasRegistrosEnMesesExpandidos = itemsEnMesesExpandidos < soloItems.filter(itemData => {
-                        const mesItem = itemData.grupo.registros[0].fecha.substring(0, 7);
-                        const estabaExpandido = mesesExpandidos.has(mesItem);
-                        const esMesActual = mesItem === mesHoy;
-                        return estabaExpandido || esMesActual;
-                    }).length;
-
-                    if (limiteVisibles < totalItems && hayMasRegistrosEnMesesExpandidos) {
+                    if (limiteVisibles < totalItems) {
                         const restantes = totalItems - limiteVisibles;
                         const aCargar = Math.min(10, restantes);
                         btnCargarMas.style.display = 'flex';
@@ -4505,24 +3997,12 @@
                     let temaOscuro = !D.cargarConfiguracion().temaOscuro;
                     document.body.classList.toggle('dark-mode');
                     try { localStorage.setItem('temaOscuro', temaOscuro); } catch (e) { }
-                    const toggleBtnEl = $('theme-toggle');
-                    if (toggleBtnEl) {
-                        const tBtn = toggleBtnEl.querySelector('use');
-                        if (tBtn) tBtn.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
-                    }
-                    // Actualizar ambos botones (si existen)
-                    const toggleBtnModal = $('theme-toggle-modal');
-                    const toggleBtnText = $('theme-text');
 
-                    if (toggleBtnModal) {
-                        const icon = toggleBtnModal.querySelector('use');
-                        if (temaOscuro) {
-                            icon.setAttribute('href', '#icon-sun');
-                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Claro';
-                        } else {
-                            icon.setAttribute('href', '#icon-moon');
-                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Oscuro';
-                        }
+                    const toggleBtn = $('theme-toggle').querySelector('use');
+                    if (temaOscuro) {
+                        toggleBtn.setAttribute('href', '#icon-sun');
+                    } else {
+                        toggleBtn.setAttribute('href', '#icon-moon');
                     }
                 }
 
@@ -4610,55 +4090,11 @@
                     $('config-dias-habiles').value = D.diasHabiles();
                     $('config-horas-diarias').value = D.horasDiarias();
                     actualizarFeedbackConfig();
-
-                    // Actualizar estado del botón de tema
-                    const temaOscuro = D.cargarConfiguracion().temaOscuro;
-                    const toggleBtnModal = $('theme-toggle-modal');
-                    const toggleBtnText = $('theme-text');
-
-                    if (toggleBtnModal) {
-                        const icon = toggleBtnModal.querySelector('use');
-                        if (temaOscuro) {
-                            icon.setAttribute('href', '#icon-sun');
-                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Claro';
-                        } else {
-                            icon.setAttribute('href', '#icon-moon');
-                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Oscuro';
-                        }
-                    }
-
                     $('modal-config').classList.add('show');
                 }
 
                 function cerrarConfig() {
-                    // 1. Cierra el modal principal de configuración
                     $('modal-config').classList.remove('show');
-
-                    // 2. Cierra también el sub-modal de respaldo si existe y está abierto
-                    const modalRespaldo = $('modal-respaldo');
-                    if (modalRespaldo) {
-                        modalRespaldo.classList.remove('show');
-                    }
-                }
-
-                function mostrarPerfiles() {
-                    const perfilActual = window.PerfilManager.obtenerDatosPerfil();
-                    const perfilId = window.PerfilManager.obtenerPerfilActual();
-
-                    $('nombre-perfil-actual').value = perfilActual.nombre;
-                    $('perfil-actual-id').textContent = perfilId;
-
-                    const btnEliminar = $('btn-eliminar-perfil-modal');
-                    if (btnEliminar) {
-                        btnEliminar.disabled = (perfilId === 'default');
-                        btnEliminar.style.opacity = (perfilId === 'default') ? '0.5' : '1';
-                    }
-
-                    $('modal-perfiles').classList.add('show');
-                }
-
-                function cerrarPerfiles() {
-                    $('modal-perfiles').classList.remove('show');
                 }
 
                 function cerrarEdicion() {
@@ -5026,11 +4462,7 @@ Generado por Sistema de Horarios
 
                     const hoy = obtenerFechaHoy();
                     const registroHoy = D.registros().find(r => r.fecha === hoy);
-
-                    // 🔧 CLAVE ESPECÍFICA POR PERFIL
-                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
-                    const storageKey = `breakStartTime_${perfilId}`;
-                    const isRunning = localStorage.getItem(storageKey) !== null;
+                    const isRunning = localStorage.getItem('breakStartTime') !== null;
                     const icon = btn.querySelector('use');
 
                     // ... (lógica de bloqueo del botón existente) ...
@@ -5076,9 +4508,7 @@ Generado por Sistema de Horarios
                 }
 
                 async function toggleTimerBreakMain() {
-                    // 🔧 CLAVE ESPECÍFICA POR PERFIL
-                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
-                    const storageKey = `breakStartTime_${perfilId}`;
+                    const storageKey = 'breakStartTime';
                     const storedStart = localStorage.getItem(storageKey);
                     const hoy = obtenerFechaHoy();
                     const registroHoy = D.registros().find(r => r.fecha === hoy);
@@ -5186,40 +4616,66 @@ Generado por Sistema de Horarios
                     }
                 }
 
-                function mostrarRespaldo() {
-                    // Cerramos config momentáneamente para efecto de navegación
-                    $('modal-config').classList.remove('show');
-                    $('modal-respaldo').classList.add('show');
-                }
-
-                function cerrarRespaldo() {
-                    // Al cerrar respaldo, volvemos a mostrar Configuración
-                    $('modal-respaldo').classList.remove('show');
-                    $('modal-config').classList.add('show');
-                }
-
                 async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
                         return;
                     }
 
-                    // 1. INICIALIZAR SISTEMAS Y EXPONER VARIABLES GLOBALES PRIMERO
-                    // Esto asegura que los botones funcionen aunque falle la interfaz gráfica después
-                    PerfilManager.inicializar();
+                    const config = D.cargarConfiguracion();
+                    const temaOscuro = config.temaOscuro;
+                    D.setVistaActual(config.vistaActual);
 
-                    window.DataManagement = {
-                        agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
-                        mostrarImportar: mostrarImportar, importarDatos: D.importarDatos, borrarTodoHistorial: D.borrarTodoHistorial,
-                        guardarEdicion: D.guardarEdicion, eliminarRegistroActual: D.eliminarRegistroActual, cargarMasRegistros: D.cargarMasRegistros,
-                        undoAction: D.undoAction, redoAction: D.redoAction, aplicarFiltros: D.aplicarFiltros,
-                        limpiarFiltros: D.limpiarFiltros, registrarVacaciones: D.registrarVacaciones, borrarPeriodo: D.borrarPeriodo,
-                        registros: D.registros, diasHabiles: D.diasHabiles, horasDiarias: D.horasDiarias,
-                        setDiasHabiles: D.setDiasHabiles, setHorasDiarias: D.setHorasDiarias, setRegistrosVisibles: D.setRegistrosVisibles
-                    };
-                    window.HistoryManager = { undo: D.undoAction, redo: D.redoAction };
-                    window.PWAInstaller = { instalarApp: PWAInstaller.instalarApp };
-                    window.PerfilManager = PerfilManager; // <--- AHORA ESTÁ AQUÍ ARRIBA
+                    D.setDiasHabiles(config.diasHabiles);
+                    D.setHorasDiarias(config.horasDiarias);
+
+                    const registrosCargados = await D.cargarConVerificacion();
+                    D.registros().splice(0, D.registros().length, ...registrosCargados);
+
+                    HistoryManager.saveState(D.registros());
+                    HistoryManager.updateButtons();
+
+
+                    if (localStorage.getItem('horasDiarias') === null) {
+                        localStorage.setItem('horasDiarias', config.horasDiarias);
+                    }
+                    if (localStorage.getItem('diasHabiles') === null) {
+                        localStorage.setItem('diasHabiles', config.diasHabiles);
+                    }
+
+                    const toggleBtn = $('theme-toggle').querySelector('use');
+                    if (temaOscuro) {
+                        document.body.classList.add('dark-mode');
+                        toggleBtn.setAttribute('href', '#icon-sun');
+                    } else {
+                        toggleBtn.setAttribute('href', '#icon-moon');
+                    }
+
+                    $('fecha').value = obtenerFechaHoy();
+                    try {
+                        const formExpandido = localStorage.getItem('formularioExpandido') === 'true';
+                        if (formExpandido) {
+                            toggleFormulario();
+                        }
+                    } catch (e) { }
+
+                    try {
+                        const statsExpandido = localStorage.getItem('statsExpandido') === 'true';
+                        if (statsExpandido) { toggleStats(); }
+                    } catch (e) { }
+
+                    try {
+                        const botonesExpandido = localStorage.getItem('botonesHistoricoExpandido') === 'true';
+                        if (botonesExpandido) {
+                            toggleBotonesHistorico();
+                        }
+                    } catch (e) { }
+
+                    ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'].forEach(id => {
+                        const el = $(id);
+                        if (el) el.addEventListener('input', formatearInput);
+                    });
+
 
                     window.UILogic = {
                         alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
@@ -5229,66 +4685,29 @@ Generado por Sistema de Horarios
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
                         cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
                         cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
-                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones,
-                        actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles,
-                        cerrarRespaldo, mostrarRespaldo, init,
+                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones
+                    };
+                    window.DataManagement = {
+                        agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
+                        mostrarImportar: mostrarImportar, importarDatos: D.importarDatos, borrarTodoHistorial: D.borrarTodoHistorial,
+                        guardarEdicion: D.guardarEdicion, eliminarRegistroActual: D.eliminarRegistroActual, cargarMasRegistros: D.cargarMasRegistros,
+                        undoAction: D.undoAction, redoAction: D.redoAction, aplicarFiltros: D.aplicarFiltros,
+                        limpiarFiltros: D.limpiarFiltros, registrarVacaciones: D.registrarVacaciones, borrarPeriodo: D.borrarPeriodo
+                    };
+                    window.HistoryManager = {
+                        undo: D.undoAction,
+                        redo: D.redoAction
+                    };
+                    window.PWAInstaller = {
+                        instalarApp: PWAInstaller.instalarApp
                     };
 
-                    // 2. CARGAR CONFIGURACIÓN
-                    const config = D.cargarConfiguracion();
-                    const temaOscuro = config.temaOscuro;
-                    D.setVistaActual(config.vistaActual);
-
-                    const perfilActual = PerfilManager.obtenerDatosPerfil();
-                    D.setDiasHabiles(perfilActual.diasHabiles || 5);
-                    D.setHorasDiarias(perfilActual.horasDiarias || 7);
-
-                    const registrosCargados = perfilActual.registros || [];
-                    D.registros().splice(0, D.registros().length, ...registrosCargados);
-
-                    HistoryManager.saveState(D.registros());
-                    HistoryManager.updateButtons();
-
-                    // 3. INTERFAZ GRÁFICA (TEMA) - Versión Segura
-                    if (temaOscuro) {
-                        document.body.classList.add('dark-mode');
-                    }
-                    // Intentar actualizar botones de tema si existen
-                    const toggleBtnEl = $('theme-toggle');
-                    if (toggleBtnEl) {
-                        const tBtn = toggleBtnEl.querySelector('use');
-                        if (tBtn) tBtn.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
-                    }
-                    const toggleBtnModal = $('theme-toggle-modal');
-                    if (toggleBtnModal) {
-                        const tBtnM = toggleBtnModal.querySelector('use');
-                        const tTxt = $('theme-text');
-                        if (tBtnM) tBtnM.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
-                        if (tTxt) tTxt.textContent = temaOscuro ? 'Modo Claro' : 'Modo Oscuro';
-                    }
-
-                    $('fecha').value = obtenerFechaHoy();
-
-                    // 4. LISTENERS E INTERACTIVIDAD
-                    ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'].forEach(id => {
-                        const el = $(id);
-                        if (el) el.addEventListener('input', formatearInput);
-                    });
-
-                    // 5. RESTAURAR ESTADO VISUAL (Con protección try-catch para evitar crash si moviste cosas)
-                    try {
-                        if (localStorage.getItem('formularioExpandido') === 'true') toggleFormulario();
-                        if (localStorage.getItem('statsExpandido') === 'true') toggleStats();
-                        if (localStorage.getItem('botonesHistoricoExpandido') === 'true') toggleBotonesHistorico();
-                    } catch (e) { console.warn('Error restaurando estado visual:', e); }
-
-                    // Inicializar PWA
+                    // Inicializar PWA Installer
                     PWAInstaller.init();
 
-                    // Primera actualización de UI
                     actualizarUI();
                     setInterval(() => actualizarUI(null, true), 60000);
-                    console.log('Sistema iniciado correctamente v6.29');
+                    console.log('Sistema iniciado correctamente Luigibosca');
                 }
 
                 function mostrarFiltros() {
@@ -5314,47 +4733,73 @@ Generado por Sistema de Horarios
                     $('modal-ayuda').classList.remove('show');
                 }
 
-                // --- FUNCIÓN GENÉRICA PARA COLAPSABLES ---
-                function toggleSeccionGen(elementId, iconId, storageKey, callback = null) {
-                    const el = $(elementId);
-                    const icon = $(iconId);
+                function toggleFormulario() {
+                    const form = $('form-registro');
+                    const icon = $('icon-indicator-form'); // Buscamos la nueva flecha por ID
 
-                    if (!el) return;
-
-                    el.classList.toggle('expanded');
-                    const isExpanded = el.classList.contains('expanded');
+                    form.classList.toggle('expanded');
 
                     if (icon) {
-                        if (isExpanded) icon.classList.add('rotated');
-                        else icon.classList.remove('rotated');
+                        // Rotación simple, igual que en las otras tarjetas
+                        if (form.classList.contains('expanded')) {
+                            icon.classList.add('rotated');
+                        } else {
+                            icon.classList.remove('rotated');
+                        }
                     }
 
-                    try { localStorage.setItem(storageKey, isExpanded); } catch (e) { }
-
-                    // Ejecutar lógica extra si es necesario (ej: cargar stats)
-                    if (isExpanded && callback) callback();
-                }
-
-                // Reemplazos simples
-                function toggleFormulario() {
-                    toggleSeccionGen('form-registro', 'icon-indicator-form', 'formularioExpandido');
+                    // Guardar estado en localStorage
+                    try {
+                        localStorage.setItem('formularioExpandido', form.classList.contains('expanded'));
+                    } catch (e) { }
                 }
 
                 function toggleBotonesHistorico() {
-                    toggleSeccionGen('botones-historico', 'icon-indicator-historico', 'botonesHistoricoExpandido');
+                    const botones = $('botones-historico');
+                    const icon = $('icon-indicator-historico'); // Ahora buscamos la flecha
+
+                    botones.classList.toggle('expanded');
+
+                    if (icon) {
+                        if (botones.classList.contains('expanded')) {
+                            icon.classList.add('rotated');
+                        } else {
+                            icon.classList.remove('rotated');
+                        }
+                    }
+
+                    try {
+                        localStorage.setItem('botonesHistoricoExpandido', botones.classList.contains('expanded'));
+                    } catch (e) { }
                 }
 
                 function toggleStats() {
-                    toggleSeccionGen('form-stats', 'icon-indicator-stats', 'statsExpandido', () => {
-                        // Lógica específica de stats al abrir
-                        poblarSelectorMeses();
-                        const selectMes = $('select-mes-stats');
-                        if (selectMes && selectMes.value) {
-                            actualizarEstadisticas(selectMes.value);
+                    const form = $('form-stats');
+                    const icon = $('icon-indicator-stats'); // Ahora buscamos la flecha
+
+                    form.classList.toggle('expanded');
+
+                    // Rotamos la flecha simplemente agregando/quitando la clase
+                    if (icon) {
+                        if (form.classList.contains('expanded')) {
+                            icon.classList.add('rotated');
+
+                            // Lógica existente de recarga de datos...
+                            poblarSelectorMeses();
+                            const selectMes = $('select-mes-stats');
+                            if (selectMes && selectMes.value) {
+                                actualizarEstadisticas(selectMes.value);
+                            } else {
+                                actualizarEstadisticas();
+                            }
                         } else {
-                            actualizarEstadisticas();
+                            icon.classList.remove('rotated');
                         }
-                    });
+                    }
+
+                    try {
+                        localStorage.setItem('statsExpandido', form.classList.contains('expanded'));
+                    } catch (e) { }
                 }
 
                 return {
@@ -5365,7 +4810,6 @@ Generado por Sistema de Horarios
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
                     toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
-                    actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -5455,9 +4899,10 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.34
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.25
     // ====================================================================
-    1) agregado limite maximo de perfiles, (establecido en 5)
+    1) cambios en horarios despues de las 00hs
+    2) se suprime la confirmacion al borrar registros por lotes
 
 
     -->
