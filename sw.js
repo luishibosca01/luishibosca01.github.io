@@ -1,73 +1,5951 @@
-const CACHE_NAME = 'horarios-v6.25-cache';
-const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
-];
+<!DOCTYPE html>
+<html lang="es">
 
-// Instalación
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Abriendo cache');
-        return cache.addAll(urlsToCache).catch(err => {
-            console.error('CRÍTICO: Falló la carga de archivos en el install:', err);
-            throw err; 
-        });
-      })
-  );
-  self.skipWaiting();
-});
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-// Activación
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Borrando cache viejo:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-  return self.clients.claim();
-});
-
-// Fetch
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-
-  const url = new URL(event.request.url);
-  if (url.origin !== location.origin) return;
-
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
+    <!-- Políticas de Seguridad -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline'; 
+                 style-src 'self' 'unsafe-inline'; 
+                 img-src 'self' data: https:; 
+                 font-src 'self' data:; 
+                 connect-src 'self'; 
+                 object-src 'none'; 
+                 base-uri 'self'; 
+                 form-action 'self'; 
+                 frame-ancestors 'none'; 
+                 upgrade-insecure-requests;">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="no-referrer">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <title>Horarios</title>
+    <style>
+        :root {
+            /* --- Variables de Color (Tema Claro) --- */
+            --bg-body: #f9fafb;
+            --bg-card: #ffffff;
+            --bg-header: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --text-inv: #ffffff;
+            --border: #e5e7eb;
+            --input-bg: #ffffff;
+            --input-focus: #272450;
+            --c-blue: #5382e6;
+            --c-green: #60ac94;
+            --c-red: #c05d76;
+            --c-purple: #8b5cf6;
+            --c-gold: #d6af66;
+            --c-gray-btn: #4b5563;
+            --c-gray-light: #cbd5e1;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+            --bg-progress-bar: rgba(224, 224, 224, 0.3);
         }
-        return fetch(event.request)
-          .then(networkResponse => {
-            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-              return networkResponse;
+
+        body.dark-mode {
+            /* --- Variables de Color (Tema Oscuro) --- */
+            --bg-body: #111827;
+            --bg-card: #1f2937;
+            --bg-header: #1f2937;
+            --text-main: #f9fafb;
+            --text-muted: #d1d5db;
+            --border: #374151;
+            --input-bg: #374151;
+            --input-focus: #4b5563;
+            --c-gray-btn: #4b5563;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --bg-progress-bar: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            overflow-anchor: none;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* --- Layout & Contenedores --- */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .header {
+            background: var(--bg-header);
+            padding: 0.3rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card,
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+            color: var(--text-main);
+        }
+
+        .card h2,
+        .modal h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .card h2.no-margin {
+            margin-bottom: 0;
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+                align-items: start;
             }
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, responseClone);
+
+            .left-column {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .right-column {
+                position: sticky;
+                top: 4.5rem;
+            }
+
+            #lista-registros {
+                max-height: 650px;
+                overflow-y: auto;
+                padding: 0.5rem;
+            }
+        }
+
+        /* --- Scrollbar Reutilizable (Clase Utilitaria) --- */
+        .custom-scroll {
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: var(--bg-body);
+            border-radius: 4px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* --- Iconos --- */
+        .icon {
+            width: 1.2em;
+            height: 1.2em;
+            vertical-align: text-bottom;
+            fill: currentColor;
+            stroke: currentColor;
+            stroke-width: 0;
+        }
+
+        .icon-line {
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* --- Formularios --- */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: var(--input-bg);
+            color: var(--text-main);
+            transition: border-color 0.2s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--input-focus);
+        }
+
+        input.error {
+            border-color: var(--c-red);
+        }
+
+        .input-error {
+            color: var(--c-red);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .input-with-btn,
+        .input-number-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .contenedor-fechas {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-number-group input {
+            text-align: center;
+        }
+
+        .contenedor-fechas .form-group {
+            flex-grow: 1;
+        }
+
+        /* --- Botones --- */
+        button {
+            width: 100%;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: white;
+            background: var(--c-gray-btn);
+        }
+
+        button:active {
+            transform: scale(1);
+        }
+
+        button:disabled {
+            background: transparent;
+            cursor: not-allowed;
+            transform: none;
+            color: #6b7280;
+        }
+
+        #btn-timer-main:disabled {
+            display: none;
+        }
+
+        /* Variantes de botones */
+        .btn-clean,
+        .btn-delete {
+            background: var(--c-red);
+        }
+
+        .btn-export {
+            background: var(--c-green);
+        }
+
+        .btn-backup,
+        .btn-edit,
+        .toast.info {
+            background: var(--c-blue);
+        }
+
+        .btn-cancel {
+            background: #4b5563;
+        }
+
+        #btn-cargar-mas {
+            margin: 1rem auto 0 auto;
+            display: none;
+        }
+
+        .btn-action-trigger {
+            width: 50%;
+            padding: 17px;
+            margin: -17px;
+            background: transparent;
+            color: var(--text-main);
+        }
+
+        .btn-action-trigger .icon {
+            animation: llamarAtencion 5s ease-in-out 1.2s 2;
+            transform-origin: bottom;
+        }
+
+        .icon-btn,
+        .time-btn,
+        .btn-increment,
+        .filter-btn {
+            width: auto;
+            padding: 0.5rem;
+            min-width: 44px;
+            height: 44px;
+            background: transparent;
+            color: var(--text-main);
+        }
+
+        .icon-btn:hover,
+        .time-btn:hover,
+        .btn-increment:hover,
+        .filter-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .time-btn,
+        .btn-increment {
+            background: var(--border);
+            border: none;
+        }
+
+        .filter-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+        }
+
+        .filter-btn.filtro-activo {
+            color: var(--c-red);
+            border-color: var(--c-red);
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .config-actions {
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* --- Stats & Progreso --- */
+        .stats-card {
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        /* --- Efecto Timer en Tarjeta Principal --- */
+        .stats-card.timer-running {
+            border: 1px solid var(--c-red);
+            animation: pulse-card 2s infinite;
+        }
+
+        .stats-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: var(--bg-progress-bar);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--bg-card);
+            transition: width 0.5s;
+        }
+
+        .progress-fill.blue {
+            background: var(--c-blue) !important;
+        }
+
+        .progress-fill.green {
+            background: var(--c-green) !important;
+        }
+
+        .progress-fill.red {
+            background: var(--c-red) !important;
+        }
+
+        .progress-fill.purple {
+            background: var(--c-purple) !important;
+        }
+
+        /* --- Lista de Registros --- */
+        .registro-grupo-titulo {
+            margin: 1rem;
+            color: var(--text-muted);
+            font-size: 18px;
+        }
+
+        .registro-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--input-bg);
+            content-visibility: auto;
+            contain-intrinsic-size: 85px;
+        }
+
+        .registro-item:hover,
+        .card-header-clickable:hover,
+        .stats-card:hover,
+        button:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-perfil-edit:active,
+        .registro-item:active {
+            transform: scale(1);
+        }
+
+        .registro-item.hoy {
+            border-left: 5px solid var(--text-main);
+        }
+
+        .registro-info {
+            flex: 1;
+        }
+
+        .registro-fecha {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-main);
+        }
+
+        .registro-horas {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .registro-total {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--c-gold);
+            margin-top: 0.25rem;
+        }
+
+        .registro-total.green-text {
+            color: var(--c-green);
+        }
+
+        .registro-total.red-text {
+            color: var(--c-red);
+        }
+
+        .registro-total.purple-text {
+            color: var(--c-purple);
+        }
+
+        .registro-total.yellow-text {
+            color: var(--c-gold);
+        }
+
+        /* --- Modal & Utilidades --- */
+        .modal {
+            display: flex;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            backdrop-filter: blur(2px);
+            transition: all 0.3s;
+        }
+
+        .modal.show {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .modal-title-block {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            position: fixed;
+            top: 5rem;
+            right: 2rem;
+            background: #1f2937;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.3s;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            white-space: pre-line;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .toast.success {
+            background: var(--c-green);
+        }
+
+        .toast.error,
+        .toast.warning {
+            background: var(--c-red);
+        }
+
+        /* --- Animaciones y Textos --- */
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes llamarAtencion {
+            0% {
+                transform: scale(1, 1);
+            }
+
+            5% {
+                transform: scale(1.25, 0.75);
+            }
+
+            /* Se aplasta */
+            10% {
+                transform: scale(0.75, 1.25);
+            }
+
+            /* Se estira */
+            15% {
+                transform: scale(1.15, 0.85);
+            }
+
+            /* Rebote suave */
+            20% {
+                transform: scale(1, 1);
+            }
+
+            /* Normal */
+
+            100% {
+                transform: scale(1, 1);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                overflow: hidden;
+            }
+
+            to {
+                opacity: 1;
+                max-height: 1000px;
+            }
+        }
+
+        @keyframes highlight-fade {
+            0% {
+                background-color: var(--c-green);
+                /* Color del destello */
+                transform: scale(1.02);
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            }
+
+            100% {
+                background-color: var(--input-bg);
+                transform: scale(1);
+                box-shadow: none;
+            }
+        }
+
+        /* Animación de pulso específica para la tarjeta (más suave) */
+        @keyframes pulse-card {
+            0% {
+                box-shadow: 0 0 0 0 rgba(192, 93, 118, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(192, 93, 118, 0);
+                /* Expansión de la sombra */
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(192, 93, 118, 0);
+            }
+        }
+
+        .animated-card {
+            animation: zoomIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+        }
+
+        .toggle-hint,
+        .config-hint-text,
+        .version-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: right;
+            display: block;
+            margin-top: 0.25rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+        }
+
+        /* --- Estadísticas Grid --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- Grupos de Registros Expandibles --- */
+        .registro-grupo-container {
+            margin: 0;
+        }
+
+        .registro-grupo-detalle {
+            margin-top: 0.5rem;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .registro-grupo-detalle .registro-item {
+            margin: 0.25rem 0;
+            background: var(--bg-body);
+        }
+
+        /* --- Select personalizado --- */
+
+        select:hover {
+            border-color: var(--text-muted);
+        }
+
+        /* --- Colapso de formulario --- */
+        .form-collapsible {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 0;
+        }
+
+        .form-collapsible.expanded {
+            max-height: 1000px;
+            opacity: 1;
+        }
+
+        .collapse-toggle {
+            cursor: pointer;
+            transition: transform 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .collapse-toggle.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* Animación de destello suave */
+
+
+        .nuevo-registro-animacion {
+            animation: highlight-fade 2s ease-out forwards;
+            z-index: 10;
+            position: relative;
+        }
+
+        .timer-btn.running {
+            color: var(--c-red);
+            border-color: var(--c-red);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(192, 93, 118, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(192, 93, 118, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(192, 93, 118, 0);
+            }
+        }
+
+        /* Estilos para cabeceras colapsables */
+        .card-header-clickable {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .chevron {
+            transition: transform 0.3s ease;
+            position: absolute;
+            right: 0;
+            user-select: none;
+        }
+
+        .chevron.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* modal informacion transiciones suaves y scrool */
+        .ayuda-scroll-container {
+            scroll-behavior: smooth;
+        }
+
+        .indice-lista {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1.5rem;
+            background: var(--input-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .indice-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .indice-link {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .indice-link:hover {
+            text-decoration: underline;
+        }
+
+        .volver-arriba {
+            display: inline-block;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .header {
+            background: var(--bg-header);
+            padding: 0.3rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Estilos para meses colapsables */
+        .registro-mes-container {
+            margin: 0;
+        }
+
+        .registro-mes-header {
+            margin: 1rem;
+            color: var(--text-muted);
+            font-size: 18px;
+            transition: color 0.2s;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .registro-mes-header:hover {
+            color: var(--text-main);
+        }
+
+        .registro-mes-detalle {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        .registro-mes-detalle.expanded {
+            max-height: 10000px;
+            opacity: 1;
+        }
+
+        .chevron-mes {
+            width: 1em;
+            height: 1em;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        /* Botón de perfil en el Header */
+        .header-profile-btn {
+            background: var(--input-bg);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: auto;
+            /* Auto ancho */
+            max-width: 220px;
+        }
+
+        .header-profile-btn:hover {
+            border-color: var(--text-muted);
+            background: var(--bg-body);
+        }
+
+        .header-profile-btn span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Lista de perfiles en el modal */
+        .perfil-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 5px;
+        }
+
+        /* 3. Aplica tus estilos personalizados de scrollbar a este contenedor */
+        .perfil-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .perfil-list-container::-webkit-scrollbar-track {
+            background: var(--bg-body);
+            border-radius: 4px;
+        }
+
+        .perfil-list-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .perfil-list-container::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        .btn-perfil-select {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 1rem;
+            text-align: left;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-perfil-select:hover {
+            border-color: var(--c-blue);
+            transform: scale(1.02);
+        }
+
+        .btn-perfil-select.activo {
+            border-color: var(--c-green);
+            background: rgba(96, 172, 148, 0.1);
+            font-weight: bold;
+        }
+
+        .btn-perfil-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            pointer-events: none;
+        }
+
+        .btn-perfil-nombre {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .btn-perfil-badge {
+            font-size: 0.8rem;
+            color: var(--c-green);
+        }
+
+        .btn-perfil-edit {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.5rem;
+            min-width: 40px;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .btn-perfil-edit .icon {
+            width: 1em;
+            height: 1em;
+            font-size: 18px;
+        }
+
+        .btn-perfil-edit:hover {
+            border-color: var(--c-blue);
+            color: var(--c-blue);
+            background: var(--bg-body);
+            transform: scale(1.03);
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        (function () { //Evitar parpadeo al actualizar, (modo oscuro)
+            try {
+                var stored = localStorage.getItem('temaOscuro');
+                if (stored === 'true' || stored === null) {
+                    document.body.classList.add('dark-mode');
+                }
+            } catch (e) { }
+        })();
+    </script>
+    <svg style="display: none;">
+        <symbol id="icon-moon" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="icon-line" stroke-width="2"
+                stroke="currentColor" fill="none"></path>
+        </symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24">
+            <g class="icon-line" stroke-width="2" stroke="currentColor">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </g>
+        </symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3" class="icon-line" stroke="currentColor"></circle>
+            <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                class="icon-line" stroke="currentColor"></path>
+        </symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" class="icon-line" stroke="currentColor"></circle>
+            <polyline points="12 6 12 12 16 14" class="icon-line" stroke="currentColor"></polyline>
+        </symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6" class="icon-line" stroke="currentColor"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" class="icon-line"
+                stroke="currentColor"></path>
+        </symbol>
+        <symbol id="icon-save" viewBox="0 0 24 24">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" class="icon-line"
+                stroke="currentColor"></path>
+            <polyline points="17 21 17 13 7 13 7 21" class="icon-line" stroke="currentColor"></polyline>
+            <polyline points="7 3 7 8 15 8" class="icon-line" stroke="currentColor"></polyline>
+        </symbol>
+        <symbol id="icon-broom" viewBox="0 0 24 24">
+            <path class="icon-line"
+                d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM8 11v6M12 11v6M16 11v6M10 3L9 6h6l-1-3" />
+        </symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" class="icon-line" stroke="currentColor"></path>
+            <polyline points="7 10 12 15 17 10" class="icon-line" stroke="currentColor"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3" class="icon-line" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-upload" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" class="icon-line" stroke="currentColor"></path>
+            <polyline points="17 8 12 3 7 8" class="icon-line" stroke="currentColor"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15" class="icon-line" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-edit" viewBox="0 0 24 24">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" class="icon-line"
+                stroke="currentColor"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" class="icon-line" stroke="currentColor">
+            </path>
+        </symbol>
+        <symbol id="icon-list" viewBox="0 0 24 24">
+            <line x1="8" y1="6" x2="21" y2="6" class="icon-line" stroke="currentColor"></line>
+            <line x1="8" y1="12" x2="21" y2="12" class="icon-line" stroke="currentColor"></line>
+            <line x1="8" y1="18" x2="21" y2="18" class="icon-line" stroke="currentColor"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6" class="icon-line" stroke="currentColor"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12" class="icon-line" stroke="currentColor"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18" class="icon-line" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-cancelar" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18" class="icon-line" stroke="currentColor"></line>
+            <line x1="6" y1="6" x2="18" y2="18" class="icon-line" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-undo" viewBox="0 0 24 24">
+            <path d="M3 7v6h6" class="icon-line" stroke="currentColor"></path>
+            <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13" class="icon-line" stroke="currentColor"></path>
+        </symbol>
+        <symbol id="icon-redo" viewBox="0 0 24 24">
+            <path d="M21 7v6h-6" class="icon-line" stroke="currentColor"></path>
+            <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13" class="icon-line" stroke="currentColor"></path>
+        </symbol>
+        <symbol id="icon-calendar-simple" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
+            <line x1="16" y1="2" x2="16" y2="6" class="icon-line" stroke="currentColor"></line>
+            <line x1="8" y1="2" x2="8" y2="6" class="icon-line" stroke="currentColor"></line>
+            <line x1="3" y1="10" x2="21" y2="10" class="icon-line" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-filter" viewBox="0 0 24 24">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" class="icon-line" stroke="currentColor">
+            </polygon>
+        </symbol>
+        <symbol id="icon-help" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" class="icon-line" stroke="currentColor"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" class="icon-line" stroke="currentColor"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17" class="icon-line" stroke-width="3" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-install" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" class="icon-line" stroke="currentColor"></path>
+            <line x1="12" y1="16" x2="12" y2="16.01" class="icon-line" stroke-width="3" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-stats" viewBox="0 0 24 24">
+            <line x1="18" y1="20" x2="18" y2="10" class="icon-line" stroke="currentColor"></line>
+            <line x1="12" y1="20" x2="12" y2="4" class="icon-line" stroke="currentColor"></line>
+            <line x1="6" y1="20" x2="6" y2="14" class="icon-line" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19" class="icon-line" stroke="currentColor"></line>
+            <line x1="5" y1="12" x2="19" y2="12" class="icon-line" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-coffee" viewBox="0 0 24 24">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1" class="icon-line" stroke="currentColor" fill="none"></path>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" class="icon-line" stroke="currentColor" fill="none">
+            </path>
+            <line x1="6" y1="1" x2="6" y2="4" class="icon-line" stroke="currentColor"></line>
+            <line x1="10" y1="1" x2="10" y2="4" class="icon-line" stroke="currentColor"></line>
+            <line x1="14" y1="1" x2="14" y2="4" class="icon-line" stroke="currentColor"></line>
+        </symbol>
+        <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+            <polyline points="6 9 12 15 18 9" class="icon-line" stroke="currentColor" stroke-width="2" fill="none">
+            </polyline>
+        </symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" class="icon-line" stroke="currentColor"></path>
+        </symbol>
+        <symbol id="icon-lock-open" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" class="icon-line" stroke="currentColor"></rect>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1" class="icon-line" stroke="currentColor"></path>
+        </symbol>
+    </svg>
+    <div class="header">
+        <button class="header-profile-btn" onclick="UILogic.abrirSelectorPerfiles()">
+            <svg class="icon">
+                <use href="#icon-clock" />
+            </svg>
+            <span id="nombre-perfil-header">Cargando...</span>
+            <svg class="icon" style="font-size: 0.8em; margin-left: 2px;">
+                <use href="#icon-chevron-down" />
+            </svg>
+        </button>
+        <div class="header-buttons">
+            <button class="icon-btn" id="btn-install" style="display: none;" onclick="PWAInstaller.instalarApp()"
+                title="Instalar aplicación">
+                <svg class="icon">
+                    <use href="#icon-install" />
+                </svg>
+            </button>
+            <button class="icon-btn" onclick="UILogic.mostrarConfig()">
+                <svg class="icon">
+                    <use href="#icon-settings" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <div class="container">
+
+        <div class="left-column">
+            <div class="card stats-card animated-card" id="stats-card" onclick="UILogic.alternarVista()"
+                style="animation-delay: 0s;">
+                <h2 id="stats-titulo">Hoy</h2>
+                <div class="stats-number" id="stats-semana">
+                    <div>0 horas 0 minutos</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <div id="stats-mensaje">Faltan 0 horas 0 minutos</div>
+                <div id="stats-buffer" style="font-size: 0.85rem; margin-top: 0.5rem; min-height: 1.2rem;"></div>
+                <span class="toggle-hint" id="toggle-hint">Toca para ver la Semana</span>
+            </div>
+            <div class="card animated-card" style="animation-delay: 0.1s;">
+                <h2 class="no-margin"
+                    style="display: flex; justify-content: center; align-items: center; position: relative;">
+                    <button class="time-btn timer-btn" id="btn-timer-main" onclick="UILogic.toggleTimerBreakMain()"
+                        style="background: transparent; padding: 0.5rem; position: absolute; left: 0px; width: 44px; height: 44px; border-radius: 8px;">
+                        <svg class="icon">
+                            <use href="#icon-coffee" />
+                        </svg>
+                    </button>
+                    <button onclick="DataManagement.agregarRegistro()" id="btn-agregar" class="btn-action-trigger">
+                        <svg class="icon">
+                            <use href="#icon-save" />
+                        </svg> Registrar
+                    </button>
+                    <svg class="icon chevron" id="icon-indicator-form" onclick="UILogic.toggleFormulario()"
+                        style="position: absolute; right: 0; cursor: pointer;">
+                        <use href="#icon-chevron-down" />
+                    </svg>
+                </h2>
+                <div class="form-collapsible" id="form-registro">
+                    <div class="form-group" style="padding-top: 20px;">
+                        <label>Fecha</label>
+                        <div class="input-with-btn">
+                            <input type="date" id="fecha" />
+                            <button class="time-btn" onclick="UILogic.mostrarVacaciones()" title="Registrar lote"
+                                style="flex-shrink: 0;">
+                                <svg class="icon">
+                                    <use href="#icon-calendar-simple" />
+                                </svg>
+                            </button>
+                        </div>
+                        <span class="input-error" id="error-fecha">Fecha inválida</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Entrada</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="entrada" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
+                            <button class="time-btn" onclick="UILogic.pegarHoraActual('entrada')"><svg class="icon">
+                                    <use href="#icon-clock" />
+                                </svg></button>
+                        </div>
+                        <span class="input-error" id="error-entrada">Formato inválido (HH:MM)</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Salida</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
+                            <button class="time-btn" onclick="UILogic.pegarHoraActual('salida')"><svg class="icon">
+                                    <use href="#icon-clock" />
+                                </svg></button>
+                        </div>
+                        <span class="input-error" id="error-salida">Formato inválido (HH:MM)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card animated-card" style="animation-delay: 0.2s;">
+                <h2 class="no-margin card-header-clickable" onclick="UILogic.toggleStats()">
+                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg class="icon">
+                            <use href="#icon-stats" />
+                        </svg> Estadísticas
+                    </span>
+                    <svg class="icon chevron" id="icon-indicator-stats">
+                        <use href="#icon-chevron-down" />
+                    </svg>
+                </h2>
+                <div class="form-collapsible" id="form-stats">
+                    <div style="padding-top: 1rem;">
+                        <div class="form-group">
+                            <label>Período</label>
+                            <select id="select-mes-stats" onchange="UILogic.cambiarMesStats()"></select>
+                        </div>
+                        <div class="stats-grid" style="padding-right: 0.5rem;">
+                            <div class="stat-item">
+                                <div class="stat-label">Días trabajados</div>
+                                <div class="stat-value" id="stat-dias-trabajados">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Feriados</div>
+                                <div class="stat-value" id="stat-feriados">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Ausencias</div>
+                                <div class="stat-value" id="stat-ausencias">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Vacaciones</div>
+                                <div class="stat-value" id="stat-vacaciones">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Entrada promedio</div>
+                                <div class="stat-value" id="stat-entrada-promedio">--:--</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Salida promedio</div>
+                                <div class="stat-value" id="stat-salida-promedio">--:--</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Promedio diario</div>
+                                <div class="stat-value" id="stat-promedio-diario">0h 0m</div>
+                            </div>
+                        </div>
+
+                        <div class="btn-group" style="margin-top: 1rem;">
+                            <button class="btn-agregar" onclick="UILogic.generarReporte()">
+                                <svg class="icon">
+                                    <use href="#icon-download" />
+                                </svg>
+                                Reporte
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card animated-card" style="animation-delay: 0.3s;">
+            <h2 class="no-margin card-header-clickable" onclick="UILogic.toggleBotonesHistorico()">
+                <span style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg class="icon">
+                        <use href="#icon-list" />
+                    </svg> Histórico
+                </span>
+                <svg class="icon chevron" id="icon-indicator-historico">
+                    <use href="#icon-chevron-down" />
+                </svg>
+            </h2>
+            <div class="form-collapsible" id="botones-historico" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                <div
+                    style="display: flex; justify-content: flex-end; gap: 0.5rem; padding-right: 0.5rem; margin-top: 1.5rem">
+                    <button class="filter-btn" id="btn-filtro" onclick="UILogic.mostrarFiltros()" title="Filtrar">
+                        <svg class="icon">
+                            <use href="#icon-filter" />
+                        </svg>
+                    </button>
+                    <button class="time-btn" id="btn-undo" onclick="HistoryManager.undo()" title="Deshacer">
+                        <svg class="icon">
+                            <use href="#icon-undo" />
+                        </svg>
+                    </button>
+                    <button class="time-btn" id="btn-redo" onclick="HistoryManager.redo()" title="Rehacer">
+                        <svg class="icon">
+                            <use href="#icon-redo" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="lista-registros" class="custom-scroll"></div>
+            <button class="icon-btn" id="btn-cargar-mas" onclick="DataManagement.cargarMasRegistros()"
+                title="Cargar más registros">
+                <svg class="icon">
+                    <use href="#icon-plus" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div class="modal" id="modal-config">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-settings" />
+                    </svg>
+                    Configuración
+                </span>
+                <span class="version-text">v6.37</span>
+            </h3>
+
+            <div class="form-group">
+                <label>Tema</label>
+                <button class="icon-btn" id="theme-toggle-modal" onclick="UILogic.alternarTema()"
+                    style="width: 100%; background: var(--border);">
+                    <svg class="icon">
+                        <use href="#icon-moon" />
+                    </svg>
+                    <span id="theme-text">Modo Oscuro</span>
+                </button>
+            </div>
+            <div class="form-group">
+                <label>Horas diarias</label>
+                <div class="input-number-group">
+                    <input type="number" id="config-horas-diarias" min="0" max="24" step="0.5" readonly /> <button
+                        class="btn-increment" onclick="UILogic.incrementarHorasDiarias()">+</button>
+                    <button class="btn-increment" onclick="UILogic.decrementarHorasDiarias()">−</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Días hábiles por semana</label>
+                <div class="input-number-group">
+                    <input type="number" id="config-dias-habiles" min="1" max="7" step="1" readonly />
+                    <button class="btn-increment" onclick="UILogic.incrementarDiasHabiles()">+</button>
+                    <button class="btn-increment" onclick="UILogic.decrementarDiasHabiles()">−</button>
+                </div>
+                <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
+            </div>
+            <div class="config-actions">
+                <button class="btn-group" onclick="UILogic.mostrarRespaldo()">
+                    <svg class="icon">
+                        <use href="#icon-save" />
+                    </svg>
+                    Respaldo y Datos
+                </button>
+                <button class="btn-group" onclick="UILogic.mostrarAyuda()">
+                    <svg class="icon">
+                        <use href="#icon-help" />
+                    </svg>
+                    Ayuda
+                </button>
+            </div>
+            <div class="btn-group">
+                <button onclick="DataManagement.guardarConfig()"><svg class="icon">
+                        <use href="#icon-save" />
+                    </svg> Guardar</button>
+                <button class="btn-cancel" onclick="UILogic.cerrarConfig()"><svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg> Cancelar</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-respaldo">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-save" />
+                    </svg>
+                    Respaldo y Datos
+                </span>
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                Administra tus registros, exporta copias de seguridad o importa datos externos.
+            </p>
+            <div class="config-actions">
+                <button class="btn-export" onclick="DataManagement.exportarJSON()">
+                    <svg class="icon">
+                        <use href="#icon-download" />
+                    </svg>
+                    Exportar Datos
+                </button>
+
+                <button class="btn-backup" onclick="UILogic.mostrarImportar()">
+                    <svg class="icon">
+                        <use href="#icon-upload" />
+                    </svg>
+                    Importar Datos
+                </button>
+
+                <button class="btn-delete" onclick="DataManagement.borrarTodoHistorial()">
+                    <svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg>
+                    Borrar Registros
+                </button>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarRespaldo()">
+                    <svg class="icon">
+                        <use href="#icon-undo" />
+                    </svg> Volver
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-editar">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-edit" />
+                    </svg>Editar Registro
+                </span>
+            </h3>
+            <div class="form-group">
+                <label>Fecha</label>
+                <div class="input-with-btn">
+                    <input type="date" id="edit-fecha" />
+                    <button class="time-btn" id="btn-lock-toggle" onclick="UILogic.toggleBloqueoEdicion()"
+                        title="Desbloquear edición">
+                        <svg class="icon">
+                            <use href="#icon-lock" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Entrada</label>
+                <div class="input-with-btn">
+                    <input type="text" id="edit-entrada" inputmode="numeric" placeholder="hh:mm"" maxlength=" 5" />
+                    <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
+                            <use href="#icon-clock" />
+                        </svg></button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Salida</label>
+                <div class="input-with-btn">
+                    <input type="text" id="edit-salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
+                    <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-salida')"><svg class="icon">
+                            <use href="#icon-clock" />
+                        </svg></button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Tiempo Fuera (opcional)</label>
+                <div class="input-with-btn">
+                    <input type="text" id="edit-tiempo-fuera" inputmode="numeric" placeholder="Ej: 00:20"
+                        maxlength="5" />
+                    <button class="time-btn" onclick="UILogic.limpiarCampo('edit-tiempo-fuera')">
+                        <svg class="icon">
+                            <use href="#icon-broom" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-edit" onclick="DataManagement.guardarEdicion()"><svg class="icon">
+                        <use href="#icon-save" />
+                    </svg> Guardar</button>
+                <button class="btn-delete" onclick="DataManagement.eliminarRegistroActual()"><svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg> Eliminar</button>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarEdicion()"><svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg> Cancelar</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-importar">
+        <div class="modal-content">
+            <h3><svg class="icon">
+                    <use href="#icon-upload" />
+                </svg> Importar Datos</h3>
+            <div class="form-group">
+                <label>Selecciona archivo (.json)</label>
+                <input type="file" id="file-import" accept=".json" />
+                <div class="config-hint-text" style="text-align: left; margin-top: 0.5rem;">
+                    Elige una opción:
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                <button class="btn-backup" onclick="DataManagement.importarDatos('merge')">
+                    <svg class="icon">
+                        <use href="#icon-list" />
+                    </svg>
+                    Combinar
+                </button>
+                <button class="btn-delete" onclick="DataManagement.importarDatos('replace')">
+                    <svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg>
+                    Reemplazar
+                </button>
+                <button class="btn-cancel" onclick="UILogic.cerrarImportar()">
+                    <svg class="icon">
+                        <use href="#icon-undo" />
+                    </svg>
+                    Volver
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-filtros">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-filter" />
+                    </svg>
+                    Filtrar Histórico
+                </span>
+            </h3>
+            <div class="form-group">
+                <label>Desde</label>
+                <input type="date" id="filtro-fecha-desde" />
+            </div>
+            <div class="form-group">
+                <label>Hasta</label>
+                <input type="date" id="filtro-fecha-hasta" />
+            </div>
+            <div class="form-group">
+                <label>Tipo de registro</label>
+                <select id="filtro-tipo">
+                    <option value="">Todos</option>
+                    <option value="normal">🕒 Normales</option>
+                    <option value="feriado">🥳 Feriados</option>
+                    <option value="ausencia">✈️ Ausencias</option>
+                    <option value="vacaciones">🏖️ Vacaciones</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn-edit" onclick="DataManagement.aplicarFiltros()">
+                    <svg class="icon">
+                        <use href="#icon-filter" />
+                    </svg> Aplicar
+                </button>
+                <button class="btn-clean" onclick="DataManagement.limpiarFiltros()">
+                    <svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg> Limpiar
+                </button>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarFiltros()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-ayuda">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-help" />
+                    </svg>
+                    Ayuda
+                </span>
+            </h3>
+            <div class="ayuda-scroll-container"
+                style="text-align: left; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+
+                <p><strong id="inicio-ayuda">Temas de ayuda:</strong></p>
+                <ul class="indice-lista">
+                    <li class="indice-item"><a href="#ayuda-entrada" class="indice-link">📥 Registrar entrada</a></li>
+                    <li class="indice-item"><a href="#ayuda-salida" class="indice-link">📤 Registrar salida</a></li>
+                    <li class="indice-item"><a href="#ayuda-manual" class="indice-link">✏️ Fecha/Hora manual</a></li>
+                    <li class="indice-item"><a href="#ayuda-rango" class="indice-link">📅 Registrar rango</a></li>
+                    <li class="indice-item"><a href="#ayuda-borrar-rango" class="indice-link">🗑️ Borrar rango</a></li>
+                    <li class="indice-item"><a href="#ayuda-break" class="indice-link">☕ Timer / Tiempo fuera</a></li>
+                    <li class="indice-item"><a href="#ayuda-editar" class="indice-link">📝 Editar registro</a></li>
+                    <li class="indice-item"><a href="#ayuda-codigos" class="indice-link">🔢 Fechas especiales</a></li>
+                    <li class="indice-item"><a href="#ayuda-extra" class="indice-link">⚙️ Funciones extra</a></li>
+                </ul>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
+
+                <p id="ayuda-entrada"><strong>¿Cómo registro una entrada?</strong></p>
+                <p>Tocá el botón <svg class="icon">
+                        <use href="#icon-save" />
+                    </svg> <strong>Registrar</strong>. Al hacerlo se genera un registro con la fecha y hora actual en el
+                    campo de entrada.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-salida"><strong>¿Cómo registro una salida?</strong></p>
+                <p>Tocá el botón <svg class="icon">
+                        <use href="#icon-save" />
+                    </svg> <strong>Registrar</strong>. Si ya tienes una entrada hoy, este botón completará el campo de
+                    salida automáticamente.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-manual"><strong>¿Cómo agregar una fecha y horas personalizadas?</strong></p>
+                <p>Tocá el botón <svg class="icon">
+                        <use href="#icon-chevron-down" />
+                    </svg> que se encuentra al costado derecho del botón Registrar para expandir el formulario manual.
+                </p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-rango"><strong>¿Cómo registro un rango de fechas?</strong></p>
+                <p>Tocá el botón <svg class="icon">
+                        <use href="#icon-calendar-simple" />
+                    </svg> junto al campo fecha. Se abre un menú para elegir "Desde" y "Hasta" y el tipo de registro
+                    (Vacaciones, Licencias, etc.).</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-borrar-rango"><strong>¿Cómo borro un rango de fechas?</strong></p>
+                <p>En el mismo menú del calendario <svg class="icon">
+                        <use href="#icon-calendar-simple" />
+                    </svg>, selecciona las fechas, el tipo de registro y toca el botón <strong>Borrar</strong>.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-break"><strong>¿Cómo registro un "break" o tiempo fuera?</strong></p>
+                <p>Tocá el botón <svg class="icon">
+                        <use href="#icon-coffee" />
+                    </svg> junto a Registrar. El timer comenzará a correr. Al tocarlo de nuevo, el tiempo transcurrido
+                    se descontará del total del día.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-editar"><strong>¿Cómo edito un registro?</strong></p>
+                <p>Toca cualquier registro en la lista del Histórico. Se abrirá un menú para modificar fecha, horas o
+                    eliminar el registro.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-codigos"><strong>Fechas especiales (Feriados/Licencias/etc)</strong></p>
+                <p>Editando o agregando manualmente, usa estos horarios:</p>
+                <ul style="list-style: none; padding-left: 0.5rem;">
+                    <li>🥳 <strong>Feriados:</strong> 00:00 a 00:00</li>
+                    <li>✈️ <strong>Ausencias:</strong> 11:11 a 11:11</li>
+                    <li>🏖️ <strong>Vacaciones:</strong> 22:22 a 22:22</li>
+                </ul>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-extra"><strong>Funciones adicionales</strong></p>
+                <ul style="padding-left: 1.5rem;">
+                    <li>Exportar/Importar (Configuración)</li>
+                    <li>Configurar días hábiles (Configuración)</li>
+                    <li>Configurar horas diarias (Configuración)</li>
+                    <li>Deshacer/Rehacer (Menú Histórico)</li>
+                    <li>Filtros de búsqueda (Menú Histórico)</li>
+                    <li>Almacenamiento de datos en localStorage</li>
+                </ul>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+                <br><br>
+                <p><strong>LA DISPONIBILIDAD Y USABILIDAD DEL SISTEMA ESTÁ GARANTIZADO POR PINDONGA.
+                        EL CODIGO ESTA DISPONIBLE EN EL REPOSITORIO DE GITHUB PARA BAJAR, EDITAR Y
+                        MEJORAR LIBREMENTE.</strong></p>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-perfiles">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-lock" />
+                    </svg>
+                    Gestión de Perfiles
+                </span>
+            </h3>
+            <div class="form-group">
+                <label>Perfil Actual</label>
+                <div class="input-with-btn">
+                    <input type="text" id="nombre-perfil-actual" placeholder="Nombre del perfil..." maxlength="30" />
+                    <button class="time-btn" onclick="PerfilManager.renombrarPerfilActual()" title="Guardar nombre">
+                        <svg class="icon">
+                            <use href="#icon-save" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="config-hint-text" style="text-align: left; margin-top: 0.5rem;">
+                    ID: <strong id="perfil-actual-id">default</strong>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Agregar Perfil</label>
+                <div class="input-with-btn">
+                    <input type="text" id="nombre-nuevo-perfil" placeholder="Nombre del perfil..." maxlength="30" />
+                    <button class="time-btn" onclick="PerfilManager.crearPerfil()" title="Crear perfil">
+                        <svg class="icon">
+                            <use href="#icon-plus" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <button class="btn-delete" onclick="PerfilManager.eliminarPerfilActual()"
+                    id="btn-eliminar-perfil-modal">
+                    <svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg>
+                    Eliminar perfil
+                </button>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarPerfiles()">
+                    <svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-vacaciones">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-calendar-simple" />
+                    </svg>
+                    Registrar por lote
+                </span>
+            </h3>
+            <div class="contenedor-fechas">
+                <div class="form-group">
+                    <label>Desde</label>
+                    <input type="date" id="vacaciones-fecha-desde" />
+                </div>
+                <div class="form-group">
+                    <label>Hasta</label>
+                    <input type="date" id="vacaciones-fecha-hasta" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Tipo de registro</label>
+                <select id="vacaciones-tipo" onchange="UILogic.actualizarBotonesVacaciones()">
+                    <option value="vacaciones">🏖️ Vacaciones (22:22)</option>
+                    <option value="ausencia">✈️ Ausencia/Licencia (11:11)</option>
+                    <option value="feriado">🥳 Feriados (00:00)</option>
+                    <option value="normal">🕒 Normales (borrar)</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn-backup" onclick="DataManagement.registrarVacaciones()">
+                    <svg class="icon">
+                        <use href="#icon-save" />
+                    </svg> Registrar
+                </button>
+                <button class="btn-delete" onclick="DataManagement.borrarPeriodo()">
+                    <svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg> Borrar
+                </button>
+            </div>
+            <div class="btn-group" style="margin-top: 0.5rem;">
+                <button class="btn-cancel" onclick="UILogic.cerrarVacaciones()">
+                    <svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-selector-perfiles">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-list" />
+                    </svg>
+                    Seleccionar Perfil
+                </span>
+            </h3>
+
+            <div id="lista-perfiles-botones" class="perfil-list-container">
+            </div>
+
+            <div class="form-group" style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <label>Agregar Nuevo Perfil</label>
+                <div class="input-with-btn">
+                    <input type="text" id="nombre-nuevo-perfil-selector" placeholder="Nombre del perfil..."
+                        maxlength="30" />
+                    <button class="time-btn" onclick="UILogic.crearPerfilDesdeSelector()" title="Crear perfil">
+                        <svg class="icon">
+                            <use href="#icon-plus" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarSelectorPerfiles()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-editar-perfil">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-edit" />
+                    </svg>
+                    Editar Perfil
+                </span>
+            </h3>
+
+            <div class="form-group">
+                <label>Nombre del Perfil</label>
+                <input type="text" id="nombre-perfil-editar" placeholder="Nombre del perfil..." maxlength="30" />
+            </div>
+
+            <div class="form-group">
+                <label>ID del Perfil</label>
+                <input type="text" id="id-perfil-editar" disabled style="opacity: 0.6; cursor: not-allowed;" />
+                <div class="config-hint-text" style="text-align: left; margin-top: 0.25rem;">
+                    El ID no se puede modificar
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-edit" onclick="UILogic.guardarEdicionPerfil()">
+                    <svg class="icon">
+                        <use href="#icon-save" />
+                    </svg>
+                    Guardar
+                </button>
+                <button class="btn-delete" onclick="UILogic.eliminarPerfilDesdeEditor()"
+                    id="btn-eliminar-perfil-editor">
+                    <svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg>
+                    Eliminar
+                </button>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarEditorPerfil()">
+                    <svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            const $ = id => document.getElementById(id);
+
+            // ====================================================================
+            // PWA INSTALLER MODULE
+            // ====================================================================
+            const PWAInstaller = (function () {
+                let deferredPrompt = null;
+                const btnInstall = document.getElementById('btn-install');
+
+                function init() {
+                    // Detectar si ya está instalada
+                    if (window.matchMedia('(display-mode: standalone)').matches ||
+                        window.navigator.standalone === true) {
+                        // Ya está instalada, no mostrar botón
+                        if (btnInstall) btnInstall.style.display = 'none';
+                        return;
+                    }
+
+                    // Capturar el evento beforeinstallprompt
+                    window.addEventListener('beforeinstallprompt', (e) => {
+                        // Prevenir el prompt automático
+                        e.preventDefault();
+                        // Guardar el evento para usarlo después
+                        deferredPrompt = e;
+                        // Mostrar el botón de instalación
+                        if (btnInstall) {
+                            btnInstall.style.display = 'flex';
+                        }
+                    });
+
+                    // Detectar cuando se instala la app
+                    window.addEventListener('appinstalled', () => {
+                        // Ocultar el botón
+                        if (btnInstall) btnInstall.style.display = 'none';
+                        deferredPrompt = null;
+
+                        // Mostrar notificación de éxito
+                        if (window.UILogic) {
+                            UILogic.mostrarToast('¡App instalada con éxito!', 'success');
+                        }
+                    });
+                }
+
+                async function instalarApp() {
+                    if (!deferredPrompt) {
+                        console.log('No hay prompt de instalación disponible');
+                        return;
+                    }
+
+                    // Mostrar el prompt de instalación
+                    deferredPrompt.prompt();
+
+                    // Esperar a que el usuario responda
+                    const { outcome } = await deferredPrompt.userChoice;
+
+                    if (outcome === 'accepted') {
+                        console.log('Usuario aceptó la instalación');
+                    } else {
+                        console.log('Usuario rechazó la instalación');
+                    }
+
+                    // Limpiar el prompt
+                    deferredPrompt = null;
+                }
+
+                return {
+                    init,
+                    instalarApp
+                };
+            })();
+
+            // ====================================================================
+            // I. SECURITY AND UTILS MODULE
+            // ====================================================================
+            const SecurityAndUtils = (function () {
+                const SECURITY_LIMITS = {
+                    MAX_REGISTROS: 1000,
+                    MAX_STRING_LENGTH: 100,
+                    MAX_JSON_SIZE: 4 * 1024 * 1024,
+                    SCHEMA_VERSION: 3,
+                    MAX_OPERATIONS_PER_MINUTE: 30
+                };
+
+                const REGEX_PATTERNS = {
+                    FECHA: /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/,
+                    HORA: /^([01]\d|2[0-3]):([0-5]\d)$/,
+                    ID: /^[a-zA-Z0-9-_]{10,100}$/
+                };
+
+                class RateLimiter {
+                    constructor(maxOps, windowMs) {
+                        this.maxOps = maxOps;
+                        this.windowMs = windowMs;
+                        this.operations = [];
+                    }
+                    canProceed() {
+                        const now = Date.now();
+                        this.operations = this.operations.filter(time => now - time < this.windowMs);
+                        if (this.operations.length >= this.maxOps) return false;
+                        this.operations.push(now);
+                        return true;
+                    }
+                }
+
+                const saveLimiter = new RateLimiter(SECURITY_LIMITS.MAX_OPERATIONS_PER_MINUTE, 60000);
+
+                function sanitizeString(str, maxLength = SECURITY_LIMITS.MAX_STRING_LENGTH) {
+                    if (typeof str !== 'string') return '';
+
+                    return str
+                        .replace(/[<>"'`]/g, '')
+                        .replace(/javascript:/gi, '')
+                        .replace(/data:/gi, '')
+                        .replace(/vbscript:/gi, '')
+                        .replace(/on\w+\s*=/gi, '')
+                        .replace(/[\x00-\x1F\x7F]/g, '')
+                        .replace(/&lt;/gi, '')
+                        .replace(/&gt;/gi, '')
+                        .replace(/&#/g, '')
+                        .trim()
+                        .substring(0, maxLength);
+                }
+
+                function validarFechaSegura(f) {
+                    if (!f || !REGEX_PATTERNS.FECHA.test(f)) return false;
+
+                    try {
+                        const [y, m, d] = f.split('-').map(Number);
+                        const fecha = new Date(y, m - 1, d);
+                        if (fecha.getFullYear() !== y ||
+                            fecha.getMonth() !== m - 1 ||
+                            fecha.getDate() !== d) {
+                            return false;
+                        }
+
+                        const ahora = new Date();
+                        const hace20Anos = new Date(ahora.getFullYear() - 20, 0, 1);
+                        const en2Anos = new Date(ahora.getFullYear() + 2, 11, 31);
+
+                        return fecha >= hace20Anos && fecha <= en2Anos && !isNaN(fecha.getTime());
+                    } catch (e) {
+                        return false;
+                    }
+                }
+
+                function validarHoraSegura(h) {
+                    return h && REGEX_PATTERNS.HORA.test(h);
+                }
+
+                function generarIDSeguro() {
+                    if (window.crypto && window.crypto.getRandomValues) {
+                        const array = new Uint32Array(4);
+                        crypto.getRandomValues(array);
+                        return Array.from(array, num => num.toString(36)).join('');
+                    }
+                    const timestamp = Date.now().toString(36);
+                    const random1 = Math.random().toString(36).substring(2, 11);
+                    const random2 = Math.random().toString(36).substring(2, 11);
+                    return `${timestamp}-${random1}${random2}`;
+                }
+
+                async function calcularHashSHA256(data) {
+                    const encoder = new TextEncoder();
+                    const dataBuffer = encoder.encode(JSON.stringify(data));
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+
+                function constantTimeCompare(a, b) {
+                    // Convertir a strings si no lo son
+                    const strA = String(a);
+                    const strB = String(b);
+
+                    const maxLength = Math.max(strA.length, strB.length);
+                    let result = strA.length === strB.length ? 0 : 1;
+
+                    for (let i = 0; i < maxLength; i++) {
+                        const charA = i < strA.length ? strA.charCodeAt(i) : 0;
+                        const charB = i < strB.length ? strB.charCodeAt(i) : 0;
+                        result |= charA ^ charB;
+                    }
+
+                    return result === 0;
+                }
+
+                function validarRegistroSeguro(r) {
+                    if (!r || typeof r !== 'object') return false;
+                    if (Array.isArray(r) || r instanceof Date) return false;
+                    if (typeof r.id !== 'string' || !REGEX_PATTERNS.ID.test(r.id)) return false;
+                    if (typeof r.fecha !== 'string' || !REGEX_PATTERNS.FECHA.test(r.fecha)) return false;
+                    if (!validarFechaSegura(r.fecha)) return false;
+                    if (r.entrada !== null) {
+                        if (typeof r.entrada !== 'string' || !REGEX_PATTERNS.HORA.test(r.entrada)) return false;
+                    }
+                    if (r.salida !== null) {
+                        if (typeof r.salida !== 'string' || !REGEX_PATTERNS.HORA.test(r.salida)) return false;
+                    }
+
+                    if (r.tiempoFuera !== null && r.tiempoFuera !== '') {
+                        if (typeof r.tiempoFuera !== 'string' || !REGEX_PATTERNS.HORA.test(r.tiempoFuera)) return false;
+                    }
+
+                    if (!Number.isFinite(r.horas) || r.horas < 0 || r.horas > 24) return false;
+                    if (!Number.isFinite(r.minutos) || r.minutos < 0 || r.minutos > 59) return false;
+                    if (!Number.isFinite(r.total) || r.total < 0 || r.total > 24) return false;
+
+                    const propiedadesPermitidas = ['id', 'fecha', 'entrada', 'salida', 'tiempoFuera', 'horas', 'minutos', 'total'];
+                    const propiedadesActuales = Object.keys(r);
+                    const tienePropiedadesSospechosas = propiedadesActuales.some(prop => !propiedadesPermitidas.includes(prop));
+                    if (tienePropiedadesSospechosas) return false;
+
+                    return true;
+                }
+                return {
+                    SECURITY_LIMITS,
+                    REGEX_PATTERNS,
+                    saveLimiter,
+                    sanitizeString,
+                    validarFechaSegura,
+                    validarHoraSegura,
+                    generarIDSeguro,
+                    calcularHashSHA256,
+                    constantTimeCompare,
+                    validarRegistroSeguro
+                };
+            })();
+
+            // ====================================================================
+            // PERFIL MANAGER MODULE
+            // ====================================================================
+            const PerfilManager = (function (S) {
+                const MAX_PERFILES = 5;
+                let perfilActual = 'default';
+                let perfiles = {};
+
+                function inicializar() {
+                    cargarPerfiles();
+                    actualizarSelector();
+                    actualizarNombrePerfil();
+                }
+
+                function cargarPerfiles() {
+                    try {
+                        const storedPerfiles = localStorage.getItem('perfiles');
+                        const storedLegacyRegistros = localStorage.getItem('registros');
+
+                        // Cargar perfiles existentes si los hay
+                        perfiles = storedPerfiles ? JSON.parse(storedPerfiles) : {};
+
+                        // --- LÓGICA DE MIGRACIÓN  ---
+                        // Verificamos si el perfil default está vacío o no existe
+                        const esPerfilVacio = !perfiles['default'] || !perfiles['default'].registros || perfiles['default'].registros.length === 0;
+
+                        // Si tenemos datos viejos y el perfil actual está vacío, intentamos rescatarlos
+                        if (storedLegacyRegistros && esPerfilVacio) {
+                            console.log("🔄 Intentando migración/rescate de datos v6.25...");
+
+                            let registrosViejos = [];
+                            try {
+                                const parsed = JSON.parse(storedLegacyRegistros);
+                                if (parsed.registros && Array.isArray(parsed.registros)) {
+                                    registrosViejos = parsed.registros;
+                                } else if (Array.isArray(parsed)) {
+                                    registrosViejos = parsed;
+                                }
+                            } catch (e) { console.error("Error leyendo legacy", e); }
+
+                            if (registrosViejos.length > 0) {
+                                // Recuperar config vieja
+                                const diasViejos = parseFloat(localStorage.getItem('diasHabiles')) || 5;
+                                const horasViejas = parseFloat(localStorage.getItem('horasDiarias')) || 7;
+
+                                perfiles['default'] = {
+                                    nombre: 'Principal (Recuperado)',
+                                    registros: registrosViejos,
+                                    diasHabiles: diasViejos,
+                                    horasDiarias: horasViejas
+                                };
+                                perfilActual = 'default';
+                                guardarPerfiles();
+
+                                if (window.UILogic) window.UILogic.mostrarToast(`Se recuperaron ${registrosViejos.length} registros antiguos`, 'success');
+                            }
+                        }
+                        // ------------------------------------
+
+                        // Crear perfil default si aún no existe
+                        if (!perfiles['default'] && Object.keys(perfiles).length === 0) {
+                            perfiles['default'] = {
+                                nombre: 'Principal',
+                                registros: [],
+                                diasHabiles: 5,
+                                horasDiarias: 7
+                            };
+                        }
+
+                        perfilActual = localStorage.getItem('perfilActivo') || 'default';
+                        if (!perfiles[perfilActual]) {
+                            const availableIds = Object.keys(perfiles);
+                            perfilActual = availableIds.length > 0 ? availableIds[0] : 'default';
+                        }
+
+                    } catch (e) {
+                        console.error('Error cargando perfiles:', e);
+                        perfiles = { 'default': { nombre: 'Principal', registros: [], diasHabiles: 5, horasDiarias: 7 } };
+                        perfilActual = 'default';
+                    }
+                }
+
+                function guardarPerfiles() {
+                    try {
+                        localStorage.setItem('perfiles', JSON.stringify(perfiles));
+                        localStorage.setItem('perfilActivo', perfilActual);
+                        return true;
+                    } catch (e) { return false; }
+                }
+
+                function actualizarNombrePerfil() {
+                    const nombreInput = document.getElementById('nombre-perfil-actual');
+                    if (nombreInput && perfiles[perfilActual]) nombreInput.value = perfiles[perfilActual].nombre;
+                    const btnEliminar = document.getElementById('btn-eliminar-perfil-modal');
+                    if (btnEliminar) {
+                        btnEliminar.disabled = (perfilActual === 'default');
+                        btnEliminar.style.opacity = (perfilActual === 'default') ? '0.5' : '1';
+                    }
+                }
+
+                function cambiarPerfil() {
+                    const selector = document.getElementById('selector-perfil');
+                    if (!selector) return;
+                    const nuevoId = selector.value;
+                    if (nuevoId === perfilActual) return;
+                    guardarDatosPerfilActual();
+                    perfilActual = nuevoId;
+                    localStorage.setItem('perfilActivo', perfilActual);
+                    location.reload();
+                }
+
+                function guardarDatosPerfilActual() {
+                    if (!window.DataManagement) return;
+                    perfiles[perfilActual] = {
+                        nombre: perfiles[perfilActual].nombre,
+                        registros: [...window.DataManagement.registros()],
+                        diasHabiles: window.DataManagement.diasHabiles(),
+                        horasDiarias: window.DataManagement.horasDiarias()
+                    };
+                    guardarPerfiles();
+                }
+
+                function cargarDatosPerfilActual() { return perfiles[perfilActual]; }
+
+                function crearPerfil() {
+                    const input = document.getElementById('nombre-nuevo-perfil');
+                    if (!input) return;
+                    const nombre = S.sanitizeString(input.value.trim(), 30);
+                    if (!nombre) return;
+                    if (Object.keys(perfiles).length >= MAX_PERFILES) {
+                        if (window.UILogic) window.UILogic.mostrarToast('Máximo de perfiles alcanzado', 'error');
+                        return;
+                    }
+                    const id = 'perfil_' + Date.now();
+                    perfiles[id] = { nombre: nombre, registros: [], diasHabiles: 5, horasDiarias: 7 };
+                    guardarPerfiles();
+                    actualizarSelector();
+                    input.value = '';
+                    if (window.UILogic) window.UILogic.mostrarToast(`Perfil "${nombre}" creado`, 'success');
+                }
+
+                function actualizarSelector() {
+                    // Actualiza el TEXTO del botón del header en lugar del select
+                    const btnTexto = document.getElementById('nombre-perfil-header');
+                    if (btnTexto && perfiles[perfilActual]) {
+                        btnTexto.textContent = perfiles[perfilActual].nombre;
+                    }
+                }
+
+                function obtenerListaPerfiles() {
+                    return Object.entries(perfiles).map(([id, perfil]) => ({
+                        id: id,
+                        nombre: perfil.nombre,
+                        esActual: id === perfilActual
+                    })).sort((a, b) => {
+                        if (a.id === 'default') return -1;
+                        if (b.id === 'default') return 1;
+                        return a.nombre.localeCompare(b.nombre);
+                    });
+                }
+
+                function cambiarPerfil(nuevoId) { // Modificado para aceptar ID directo
+                    if (!nuevoId) return; // Si viene del select antiguo (ya no existe)
+                    if (nuevoId === perfilActual) return;
+
+                    guardarDatosPerfilActual();
+                    perfilActual = nuevoId;
+                    localStorage.setItem('perfilActivo', perfilActual);
+                    location.reload();
+                }
+
+                async function eliminarPerfilActual() {
+                    if (perfilActual === 'default') {
+                        if (window.UILogic) window.UILogic.mostrarToast('No se puede eliminar el perfil Principal', 'error');
+                        return;
+                    }
+
+                    const nombre = perfiles[perfilActual].nombre;
+                    const confirmacion = window.confirm(`¿Estás seguro de que quieres eliminar el perfil "${nombre}"?\n\nEsta acción NO se puede deshacer.`);
+
+                    if (!confirmacion) return;
+
+                    // Preguntar por Backup
+                    const deseaBackup = window.confirm(`Antes de eliminar "${nombre}":\n\n¿Deseas descargar una copia de seguridad de estos datos?`);
+
+                    if (deseaBackup) {
+                        // Usamos la función de exportar existente
+                        if (window.DataManagement) {
+                            window.DataManagement.exportarJSON();
+                            // Damos un pequeño tiempo para que inicie la descarga antes de borrar
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+
+                    delete perfiles[perfilActual];
+                    perfilActual = 'default';
+                    localStorage.setItem('perfilActivo', perfilActual);
+                    guardarPerfiles();
+                    location.reload();
+                }
+
+                function obtenerPerfilActual() { return perfilActual; }
+                function obtenerDatosPerfil() { return perfiles[perfilActual]; }
+                function renombrarPerfilActual() {
+                    const input = document.getElementById('nombre-perfil-actual');
+                    if (!input) return;
+                    const nuevo = S.sanitizeString(input.value.trim(), 30);
+                    if (!nuevo) return;
+                    perfiles[perfilActual].nombre = nuevo;
+                    guardarPerfiles();
+                    actualizarSelector();
+                    if (window.UILogic) window.UILogic.mostrarToast('Renombrado', 'success');
+                }
+
+                return {
+                    inicializar, cambiarPerfil, crearPerfil, eliminarPerfilActual,
+                    guardarDatosPerfilActual, cargarDatosPerfilActual,
+                    obtenerPerfilActual, obtenerDatosPerfil, renombrarPerfilActual,
+                    obtenerListaPerfiles
+                };
+
+            })(SecurityAndUtils);
+
+            // ====================================================================
+            // HISTORY MANAGER MODULE
+            // ====================================================================
+            const HistoryManager = (function () {
+                let history = [];
+                let currentIndex = -1;
+                const MAX_HISTORY = 50;
+
+                function deepClone(obj) {
+                    if (obj === null || obj === undefined) return obj;
+
+                    try {
+                        return structuredClone(obj);
+
+                    } catch (e) {
+                        console.warn('Fallo en structuredClone. Usando fallback JSON.stringify.', e);
+                        return JSON.parse(JSON.stringify(obj));
+                    }
+                }
+
+                function saveState(registros) {
+                    // CRÍTICO: Hacer copia profunda INMEDIATAMENTE
+                    const copiaSegura = deepClone(registros);
+
+                    // Si estamos en medio del historial (después de un undo),
+                    // eliminar todos los estados "futuros"
+                    if (currentIndex < history.length - 1) {
+                        history.splice(currentIndex + 1);
+                    }
+
+                    // Guardar la copia profunda
+                    history.push(copiaSegura);
+
+                    // Limitar tamaño del historial
+                    if (history.length > MAX_HISTORY) {
+                        history.shift();
+                        currentIndex = MAX_HISTORY - 1;
+                    } else {
+                        currentIndex = history.length - 1;
+                    }
+
+                    updateButtons();
+                }
+
+                function undo() {
+                    if (currentIndex > 0) {
+                        currentIndex--;
+                        updateButtons();
+                        const estado = deepClone(history[currentIndex]);
+                        return estado;
+                    }
+                    return null;
+                }
+
+                function redo() {
+                    if (currentIndex < history.length - 1) {
+                        currentIndex++;
+                        updateButtons();
+                        const estado = deepClone(history[currentIndex]);
+                        return estado;
+                    }
+                    return null;
+                }
+
+                function canUndo() {
+                    return currentIndex > 0;
+                }
+
+                function canRedo() {
+                    return currentIndex < history.length - 1;
+                }
+
+                function updateButtons() {
+                    const undoBtn = document.getElementById('btn-undo');
+                    const redoBtn = document.getElementById('btn-redo');
+
+                    if (undoBtn) undoBtn.disabled = !canUndo();
+                    if (redoBtn) redoBtn.disabled = !canRedo();
+                }
+
+                function clear() {
+                    history = [];
+                    currentIndex = -1;
+                    updateButtons();
+                }
+
+                return {
+                    saveState,
+                    undo,
+                    redo,
+                    canUndo,
+                    canRedo,
+                    updateButtons,
+                    clear,
+                };
+            })();
+
+            // ====================================================================
+            // II. DATA MANAGEMENT MODULE (CORREGIDO)
+            // ====================================================================
+            const DataManagement = (function (S) {
+                let registros = [], diasHabiles = 5, horasDiarias = 7, editandoId = null;
+                let vistaActual = 'diaria', registrosVisibles = 10;
+                let cacheSemana = { inicio: null, fin: null, calculado: null };
+                let filtroActivo = false;
+                let filtroDesde = null;
+                let filtroHasta = null;
+                let filtroTipo = null;
+
+                async function cargarConVerificacion() {
+                    try {
+                        const stored = localStorage.getItem('registros');
+                        if (!stored) return [];
+                        const data = JSON.parse(stored);
+
+                        if (data.hash) {
+                            const hashCalculado = await S.calcularHashSHA256(data.registros);
+
+                            // ✅ Usar comparación segura contra timing attacks
+                            if (!S.constantTimeCompare(hashCalculado, data.hash)) {
+                                console.warn('⚠️ Integridad comprometida');
+                                UILogic.mostrarToast('Advertencia de integridad', 'warning');
+                                const continuar = confirm('⚠️ Los datos pueden haber sido modificados.\n\n¿Deseas cargarlos de todos modos?');
+                                if (!continuar) {
+                                    localStorage.removeItem('registros');
+                                    return [];
+                                }
+                            }
+                        }
+                        return (data.registros || []).filter(S.validarRegistroSeguro);
+                    } catch (e) {
+                        console.error('Error cargando:', e);
+                        return [];
+                    }
+                }
+
+                async function registrarVacaciones() {
+                    const desde = S.sanitizeString($('vacaciones-fecha-desde').value, 10);
+                    const hasta = S.sanitizeString($('vacaciones-fecha-hasta').value, 10);
+                    const tipo = $('vacaciones-tipo').value;
+
+                    if (!S.validarFechaSegura(desde) || !S.validarFechaSegura(hasta)) {
+                        UILogic.mostrarToast('Fechas inválidas', 'error');
+                        return;
+                    }
+
+                    if (desde > hasta) {
+                        UILogic.mostrarToast('La fecha "Desde" debe ser anterior a "Hasta"', 'error');
+                        return;
+                    }
+
+                    // Determinar valores según tipo
+                    let entrada, salida;
+                    switch (tipo) {
+                        case 'vacaciones':
+                            entrada = '22:22';
+                            salida = '22:22';
+                            break;
+                        case 'ausencia':
+                            entrada = '11:11';
+                            salida = '11:11';
+                            break;
+                        case 'feriado':
+                            entrada = '00:00';
+                            salida = '00:00';
+                            break;
+                        default:
+                            entrada = '11:11';
+                            salida = '11:11';
+                    }
+
+                    let fechaActual = new Date(desde.replace(/-/g, '/') + ' 00:00:00');
+                    const fechaFin = new Date(hasta.replace(/-/g, '/') + ' 00:00:00');
+                    const unDia = 1000 * 60 * 60 * 24;
+                    const diferenciaTiempo = Math.abs(fechaFin - fechaActual);
+                    const totalDias = Math.ceil(diferenciaTiempo / unDia) + 1; // +1 para incluir el día final
+                    const MAX_DIAS_LOTE = 60; // Límite de seguridad: 2 meses por operación
+
+                    if (totalDias > MAX_DIAS_LOTE) {
+                        UILogic.mostrarToast(`Por seguridad, el máximo es ${MAX_DIAS_LOTE} días por operación.`, 'error');
+                        return;
+                    }
+                    const fechasARegistrar = [];
+
+                    while (fechaActual <= fechaFin) {
+                        const y = fechaActual.getFullYear();
+                        const m = String(fechaActual.getMonth() + 1).padStart(2, '0');
+                        const d = String(fechaActual.getDate()).padStart(2, '0');
+                        fechasARegistrar.push(`${y}-${m}-${d}`);
+                        fechaActual.setDate(fechaActual.getDate() + 1);
+                    }
+
+                    // Verificar límites
+                    const nuevosRegistros = fechasARegistrar.filter(f => !registros.some(r => r.fecha === f));
+
+                    if (registros.length + nuevosRegistros.length > S.SECURITY_LIMITS.MAX_REGISTROS) {
+                        UILogic.mostrarToast(`Límite alcanzado. Solo se pueden agregar ${S.SECURITY_LIMITS.MAX_REGISTROS - registros.length} registros más`, 'error');
+                        return;
+                    }
+
+                    if (nuevosRegistros.length === 0) {
+                        UILogic.mostrarToast('Todas las fechas ya están registradas', 'warning');
+                        return;
+                    }
+
+                    // Crear registros
+                    nuevosRegistros.forEach(fecha => {
+                        const t = calcularHoras(entrada, salida, null);
+                        registros.push({
+                            id: S.generarIDSeguro(),
+                            fecha: fecha,
+                            entrada: entrada,
+                            salida: salida,
+                            tiempoFuera: null,
+                            horas: t?.horas || 0,
+                            minutos: t?.minutos || 0,
+                            total: t?.total || 0
+                        });
+                    });
+
+                    registros.sort((a, b) => {
+                        if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
+                        return (b.entrada || '').localeCompare(a.entrada || '');
+                    });
+
+                    const saved = await guardarYActualizar();
+
+                    if (saved) {
+                        HistoryManager.saveState(registros);
+                    }
+                    if (saved) {
+                        const tipoTexto = tipo === 'vacaciones' ? 'Vacaciones' : tipo === 'ausencia' ? 'Ausencias' : 'Feriados';
+                        UILogic.mostrarToast(`✅ ${nuevosRegistros.length} días registrados como ${tipoTexto}`, 'success');
+                        UILogic.cerrarVacaciones();
+                        $('vacaciones-fecha-desde').value = '';
+                        $('vacaciones-fecha-hasta').value = '';
+                    }
+                }
+
+                async function borrarPeriodo() {
+                    const desde = S.sanitizeString($('vacaciones-fecha-desde').value, 10);
+                    const hasta = S.sanitizeString($('vacaciones-fecha-hasta').value, 10);
+                    const tipo = $('vacaciones-tipo').value;
+
+                    if (!S.validarFechaSegura(desde) || !S.validarFechaSegura(hasta)) {
+                        UILogic.mostrarToast('Fechas inválidas', 'error');
+                        return;
+                    }
+
+                    if (desde > hasta) {
+                        UILogic.mostrarToast('La fecha "Desde" debe ser anterior a "Hasta"', 'error');
+                        return;
+                    }
+
+                    let entrada, salida, tipoTexto;
+
+                    // ✅ NUEVO: Agregar caso para "normal"
+                    switch (tipo) {
+                        case 'vacaciones':
+                            entrada = '22:22';
+                            salida = '22:22';
+                            tipoTexto = 'Vacaciones';
+                            break;
+                        case 'ausencia':
+                            entrada = '11:11';
+                            salida = '11:11';
+                            tipoTexto = 'Ausencias';
+                            break;
+                        case 'feriado':
+                            entrada = '00:00';
+                            salida = '00:00';
+                            tipoTexto = 'Feriados';
+                            break;
+                        case 'normal':
+                            // Para normales, borramos cualquier registro que NO sea especial
+                            entrada = null;
+                            salida = null;
+                            tipoTexto = 'Normales';
+                            break;
+                        default:
+                            UILogic.mostrarToast('Tipo inválido', 'error');
+                            return;
+                    }
+
+                    // ✅ LÓGICA DIFERENTE PARA NORMALES
+                    let registrosAEliminar;
+
+                    if (tipo === 'normal') {
+                        // Para normales: eliminar registros que NO sean feriados, ausencias o vacaciones
+                        registrosAEliminar = registros.filter(r => {
+                            const dentroDelRango = r.fecha >= desde && r.fecha <= hasta;
+                            const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
+                            const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+                            const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
+
+                            // Solo eliminar si está en el rango Y NO es un tipo especial
+                            return dentroDelRango && !esFeriado && !esAusencia && !esVacaciones;
+                        });
+                    } else {
+                        // Para tipos especiales: lógica original
+                        registrosAEliminar = registros.filter(r => {
+                            return r.fecha >= desde &&
+                                r.fecha <= hasta &&
+                                r.entrada === entrada &&
+                                r.salida === salida;
+                        });
+                    }
+
+                    if (registrosAEliminar.length === 0) {
+                        UILogic.mostrarToast(`No hay registros de ${tipoTexto} en ese período`, 'info');
+                        return;
+                    }
+
+                    registros = registros.filter(r => !registrosAEliminar.includes(r));
+
+                    const saved = await guardarYActualizar();
+
+                    if (saved) {
+                        HistoryManager.saveState(registros);
+                    }
+
+                    if (saved) {
+                        UILogic.mostrarToast(`✅ ${registrosAEliminar.length} registro(s) de ${tipoTexto} eliminados`, 'success');
+                        UILogic.cerrarVacaciones();
+                        $('vacaciones-fecha-desde').value = '';
+                        $('vacaciones-fecha-hasta').value = '';
+                    }
+                }
+
+                async function guardarConIntegridad(regs) {
+                    if (!S.saveLimiter.canProceed()) {
+                        UILogic.mostrarToast('Demasiadas operaciones, espera un momento', 'warning');
+                        return false;
+                    }
+                    try {
+                        const hash = await S.calcularHashSHA256(regs);
+                        const data = {
+                            registros: regs,
+                            hash,
+                            timestamp: Date.now(),
+                            version: S.SECURITY_LIMITS.SCHEMA_VERSION
+                        };
+                        const str = JSON.stringify(data);
+                        const size = new Blob([str]).size;
+                        if (size > S.SECURITY_LIMITS.MAX_JSON_SIZE) {
+                            UILogic.mostrarToast('Almacenamiento lleno', 'error');
+                            return false;
+                        }
+                        localStorage.setItem('registros', str);
+                        return true;
+                    } catch (e) {
+                        console.error('Error guardando:', e);
+                        if (e.name === 'QuotaExceededError') {
+                            UILogic.mostrarToast('Espacio lleno', 'error');
+                        }
+                        return false;
+                    }
+                }
+
+                // Dentro de DataManagement...
+
+                async function guardarYActualizar(actualizarRegistros = true, idNuevo = null) {
+                    let saveSuccessful = true;
+
+                    // --- CORRECCIÓN: NO SOBRESCRIBIR BACKUP LEGACY ---
+                    // En la v6.35 original, esto borraba tus datos viejos.
+                    // Lo comentamos o cambiamos la clave si quieres un backup plano.
+                    /* if (actualizarRegistros) {
+                        saveSuccessful = await guardarConIntegridad(registros); 
+                    } 
+                    */
+
+                    // Opcional: Guardar en una clave NUEVA para no tocar la vieja
+                    if (actualizarRegistros) {
+                        // Guardamos en 'registros_active' en lugar de 'registros'
+                        // Esto requiere modificar guardarConIntegridad o hacerlo manual aquí, 
+                        // pero lo más importante es que PerfilManager ya guarda los datos.
+                        // Así que con PerfilManager basta.
+                    }
+
+                    if (window.PerfilManager) {
+                        // Esta es la forma correcta de guardar en v6.35
+                        PerfilManager.guardarDatosPerfilActual();
+                    }
+
+                    if (saveSuccessful) {
+                        UILogic.actualizarUI(idNuevo);
+                    }
+                    return saveSuccessful;
+                }
+
+                function cargarConfiguracion() {
+                    try {
+                        const d = parseFloat(localStorage.getItem('diasHabiles'));
+                        const hd = parseFloat(localStorage.getItem('horasDiarias'));
+
+                        let diasCalculados = 5;
+                        if (isNaN(d)) {
+                            const hsAntiguas = parseFloat(localStorage.getItem('horasSemanales'));
+                            if (!isNaN(hsAntiguas) && !isNaN(hd) && hd > 0) {
+                                diasCalculados = Math.round(hsAntiguas / hd);
+                                if (diasCalculados < 1) diasCalculados = 1;
+                                if (diasCalculados > 7) diasCalculados = 7;
+                            }
+                        }
+
+                        let t = localStorage.getItem('temaOscuro') === 'true';
+                        if (localStorage.getItem('temaOscuro') === null) {
+                            t = true;
+                        }
+
+                        const v = localStorage.getItem('vistaActual');
+
+                        // Validación estricta de tipos
+                        const diasFinal = (!isNaN(d) && Number.isFinite(d) && d >= 1 && d <= 7) ? d : diasCalculados;
+                        const horasFinal = (!isNaN(hd) && Number.isFinite(hd) && hd >= 0 && hd <= 24) ? hd : 7;
+                        return {
+                            diasHabiles: diasFinal,
+                            horasDiarias: horasFinal,
+                            temaOscuro: t,
+                            vistaActual: (v === 'semana' || v === 'diaria') ? v : 'diaria'
+                        };
+                    } catch (e) {
+                        console.error('Error cargando configuración:', e);
+                        return { diasHabiles: 5, horasDiarias: 7, temaOscuro: true, vistaActual: 'diaria' };
+                    }
+                }
+
+                function tiempoEnMinutos(h) {
+                    if (!h || !h.includes(':')) return 0;
+                    const [hr, mn] = h.split(':').map(Number);
+                    return (hr * 60) + mn;
+                }
+
+                function calcularHoras(e, s, tf = null) {
+                    const tfMinutos = tf ? tiempoEnMinutos(tf) : 0;
+
+                    // Ausencia/Licencia
+                    if (e === '11:11' && s === '11:11') {
+                        return { horas: 0, minutos: 0, total: horasDiarias, esAusencia: true };
+                    }
+
+                    // Vacaciones
+                    if (e === '22:22' && s === '22:22') {
+                        return { horas: 0, minutos: 0, total: horasDiarias, esVacaciones: true };
+                    }
+
+                    // Feriado
+                    if (e === '00:00' && s === '00:00') {
+                        const minFeriado = horasDiarias * 60;
+                        return { horas: Math.floor(minFeriado / 60), minutos: Math.round(minFeriado % 60), total: horasDiarias };
+                    }
+
+                    if (!e || !s || !e.includes(':') || !s.includes(':')) return null;
+
+                    const [hE, mE] = e.split(':').map(Number);
+                    const [hS, mS] = s.split(':').map(Number);
+
+                    if (!Number.isFinite(hE) || !Number.isFinite(mE) ||
+                        !Number.isFinite(hS) || !Number.isFinite(mS)) {
+                        return null;
+                    }
+
+                    const minutosEntrada = hE * 60 + mE;
+                    const minutosSalida = hS * 60 + mS;
+
+                    if (minutosEntrada > 1440 || minutosSalida > 1440 ||
+                        minutosEntrada < 0 || minutosSalida < 0) {
+                        return null;
+                    }
+
+                    let minTotal = minutosSalida - minutosEntrada;
+
+                    if (minTotal < 0) {
+                        minTotal += 24 * 60; // Agregar 24 horas
+                    }
+
+                    let minNeto = minTotal - tfMinutos;
+                    if (minNeto < 0) minNeto = 0;
+
+                    return { horas: Math.floor(minNeto / 60), minutos: minNeto % 60, total: minNeto / 60 };
+                }
+
+                function calcularHorasFeriadoEnRango(inicio, fin) {
+                    const horasDiariasLocal = horasDiarias;
+                    let horasDescontar = 0;
+
+                    registros.forEach(r => {
+                        const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
+                        const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+                        const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
+
+                        if (r.fecha >= inicio && r.fecha <= fin && (esFeriado || esAusencia || esVacaciones)) {
+                            horasDescontar += horasDiariasLocal;
+                        }
+                    });
+                    return horasDescontar;
+                }
+
+                function validarFormulario() {
+                    let valido = true;
+                    const fecha = $('fecha').value;
+                    const entrada = $('entrada').value.trim();
+                    const salida = $('salida').value.trim();
+
+                    UILogic.limpiarError('fecha', 'error-fecha');
+                    UILogic.limpiarError('entrada', 'error-entrada');
+                    UILogic.limpiarError('salida', 'error-salida');
+
+                    if (!fecha || !S.validarFechaSegura(fecha)) {
+                        UILogic.mostrarError('fecha', 'error-fecha');
+                        valido = false;
+                    }
+                    if (entrada && !S.validarHoraSegura(entrada)) {
+                        UILogic.mostrarError('entrada', 'error-entrada');
+                        valido = false;
+                    }
+                    if (salida && !S.validarHoraSegura(salida)) {
+                        UILogic.mostrarError('salida', 'error-salida');
+                        valido = false;
+                    }
+                    return valido;
+                }
+
+                async function agregarRegistro() {
+                    if (!validarFormulario()) {
+                        UILogic.mostrarToast('Verifica los campos', 'error');
+                        return;
+                    }
+
+                    const btn = $('btn-agregar');
+                    btn.disabled = true;
+                    let usaHoraActual = false;
+
+                    const f = S.sanitizeString($('fecha').value, 10);
+                    let e = S.sanitizeString($('entrada').value.trim(), 5);
+                    let s = S.sanitizeString($('salida').value.trim(), 5);
+
+                    const registroExistente = registros.find(r => r.fecha === f);
+
+                    if (!e && !s) {
+                        const now = new Date();
+                        const h = String(now.getHours()).padStart(2, '0');
+                        const m = String(now.getMinutes()).padStart(2, '0');
+                        const horaActual = `${h}:${m}`;
+
+                        if (registroExistente && registroExistente.entrada && !registroExistente.salida) {
+                            s = horaActual;
+                            $('salida').value = s;
+                            usaHoraActual = true;
+                        } else {
+                            e = horaActual;
+                            $('entrada').value = e;
+                            usaHoraActual = true;
+                        }
+                    }
+
+                    if (!e && s) {
+                        if (!registroExistente) {
+                            UILogic.resetearBoton(btn);
+                            UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
+                            return;
+                        }
+
+                        if (registroExistente.salida) {
+                            UILogic.resetearBoton(btn);
+                            UILogic.mostrarToast('Ya existe un registro completo para esta fecha', 'error');
+                            return;
+                        }
+
+                        if (!registroExistente.entrada) {
+                            UILogic.resetearBoton(btn);
+                            UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
+                            return;
+                        }
+                    }
+
+                    if (registroExistente && !e && s && registroExistente.entrada && !registroExistente.salida) {
+                        registroExistente.salida = s;
+                        let t = calcularHoras(registroExistente.entrada, s, registroExistente.tiempoFuera || null);
+                        registroExistente.horas = t?.horas || 0;
+                        registroExistente.minutos = t?.minutos || 0;
+                        registroExistente.total = t?.total || 0;
+
+                        HistoryManager.saveState(registros);
+
+                        // PASAMOS EL ID DEL REGISTRO ACTUALIZADO PARA ANIMARLO
+                        const saved = await guardarYActualizar(true, registroExistente.id);
+                        if (saved) {
+                            const mensaje = usaHoraActual ?
+                                `Salida registrada con hora actual \n(entrada: ${registroExistente.entrada})` :
+                                `Salida ${s} agregada \n(entrada: ${registroExistente.entrada})`;
+                            UILogic.mostrarToast(mensaje, 'success');
+                            UILogic.resetearBoton(btn);
+                            $('fecha').value = UILogic.obtenerFechaHoy();
+                            $('salida').value = '';
+                        } else {
+                            UILogic.resetearBoton(btn);
+                        }
+                        return;
+                    }
+
+                    if (registroExistente) {
+                        UILogic.resetearBoton(btn);
+                        if (usaHoraActual) {
+                            $('entrada').value = '';
+                        }
+                        UILogic.mostrarToast('Ya existe un registro para esta fecha', 'error');
+                        return;
+                    }
+
+                    if (registros.length >= S.SECURITY_LIMITS.MAX_REGISTROS) {
+                        UILogic.resetearBoton(btn);
+                        UILogic.mostrarToast('Límite alcanzado', 'error');
+                        return;
+                    }
+
+                    // GENERAMOS ID
+                    const nuevoId = S.generarIDSeguro();
+
+                    const t = calcularHoras(e || null, s || null, null);
+                    registros.push({
+                        id: nuevoId,
+                        fecha: f,
+                        entrada: e || null,
+                        salida: s || null,
+                        tiempoFuera: null,
+                        horas: t?.horas || 0,
+                        minutos: t?.minutos || 0,
+                        total: t?.total || 0
+                    });
+                    registros.sort((a, b) => {
+                        if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
+                        return (b.entrada || '').localeCompare(a.entrada || '');
+                    });
+
+                    HistoryManager.saveState(registros);
+
+                    // PASAMOS EL ID NUEVO AQUI
+                    const saved = await guardarYActualizar(true, nuevoId);
+
+                    if (saved) {
+                        const mensaje = usaHoraActual ? 'Registro agregado con hora actual' : 'Registro agregado';
+                        UILogic.mostrarToast(mensaje, 'success');
+                        UILogic.resetearBoton(btn);
+                        $('fecha').value = UILogic.obtenerFechaHoy();
+                        $('entrada').value = '';
+                        $('salida').value = '';
+                    } else {
+                        UILogic.resetearBoton(btn);
+                    }
+                }
+
+                async function eliminarRegistroActual() {
+                    if (editandoId) {
+                        const modal = $('modal-editar');
+                        const btnEliminar = modal.querySelector('.btn-delete');
+                        btnEliminar.disabled = true;
+                        const registroABorrar = registros.find(r => r.id === editandoId);
+                        const hoy = UILogic.obtenerFechaHoy();
+
+                        if (registroABorrar && registroABorrar.fecha === hoy) {
+                            // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
+                            const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                            const storageKey = `breakStartTime_${perfilId}`;
+                            if (localStorage.getItem(storageKey)) {
+                                localStorage.removeItem(storageKey);
+                                UILogic.mostrarToast('Timer detenido al borrar el registro', 'info');
+                            }
+                        }
+
+                        registros = registros.filter(r => r.id !== editandoId);
+                        HistoryManager.saveState(registros);
+
+                        const saved = await guardarYActualizar();
+                        btnEliminar.disabled = false;
+                        btnEliminar.innerHTML = '<svg class="icon"><use href="#icon-trash"/></svg> Eliminar';
+
+                        if (saved) {
+                            UILogic.mostrarToast('Registro eliminado', 'success');
+                            UILogic.cerrarEdicion();
+                            // Forzamos actualización del botón visualmente
+                            UILogic.actualizarEstadoBotonTimerMain();
+                        }
+                    }
+                }
+
+                function editarRegistro(id) {
+                    if (editandoId !== null) return;
+                    const r = registros.find(x => x.id === id);
+                    if (!r) return;
+                    editandoId = id;
+                    $('edit-fecha').value = r.fecha;
+                    $('edit-entrada').value = r.entrada || '';
+                    $('edit-salida').value = r.salida || '';
+                    $('edit-tiempo-fuera').value = r.tiempoFuera || '';
+                    $('modal-editar').classList.add('show');
+                    UILogic.setBloqueoEdicion(true)
+                }
+                async function guardarEdicion() {
+                    const r = registros.find(x => x.id === editandoId);
+                    if (!r) return;
+
+                    const modal = $('modal-editar');
+                    const btnGuardar = modal.querySelector('.btn-edit');
+                    btnGuardar.disabled = true;
+
+                    // Obtener valores de los inputs
+                    const f = S.sanitizeString($('edit-fecha').value, 10);
+                    const e = S.sanitizeString($('edit-entrada').value.trim(), 5);
+                    const s = S.sanitizeString($('edit-salida').value.trim(), 5);
+                    let tf = S.sanitizeString($('edit-tiempo-fuera').value.trim(), 5);
+                    if (tf === '') tf = null;
+
+                    // DETECTAR CAMBIOS ---
+                    const actualEntrada = r.entrada || '';
+                    const nuevaEntrada = e || '';
+                    const actualSalida = r.salida || '';
+                    const nuevaSalida = s || '';
+                    const actualTF = r.tiempoFuera || '';
+                    const nuevoTF = tf || ''; // tf puede ser null, pero para comparar usamos ''
+
+                    // Comparamos todo
+                    if (r.fecha === f &&
+                        actualEntrada === nuevaEntrada &&
+                        actualSalida === nuevaSalida &&
+                        actualTF === nuevoTF) {
+
+                        // Si todo es igual, avisamos y cerramos
+                        UILogic.mostrarToast('Sin cambios', 'info');
+                        UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                        UILogic.cerrarEdicion();
+                        return;
+                    }
+                    // --------------------------------------
+
+                    if (!S.validarFechaSegura(f) || (e && !S.validarHoraSegura(e)) || (s && !S.validarHoraSegura(s)) || (tf && !S.validarHoraSegura(tf))) {
+                        UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                        UILogic.mostrarToast('Verifica los campos', 'error');
+                        return;
+                    }
+
+                    if (!e && s) {
+                        UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                        UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
+                        return;
+                    }
+
+                    if (!e && !s) {
+                        // Si ambos campos están vacíos, eliminar el registro
+                        const registroABorrar = registros.find(r => r.id === editandoId);
+                        if (registroABorrar && registroABorrar.fecha === UILogic.obtenerFechaHoy()) {
+                            // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
+                            const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                            const storageKey = `breakStartTime_${perfilId}`;
+                            localStorage.removeItem(storageKey);
+                            UILogic.actualizarEstadoBotonTimerMain();
+                        }
+                        registros = registros.filter(r => r.id !== editandoId);
+                        HistoryManager.saveState(registros);
+
+                        const saved = await guardarYActualizar();
+
+                        if (saved) {
+                            UILogic.mostrarToast('Registro eliminado (vacío)', 'info');
+                            UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                            UILogic.cerrarEdicion();
+                        } else {
+                            UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                        }
+                        return;
+                    }
+
+                    const existeFecha = registros.some(reg => reg.fecha === f && reg.id !== editandoId);
+                    if (existeFecha) {
+                        UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                        UILogic.mostrarToast('Ya existe otro registro', 'error');
+                        return;
+                    }
+
+                    // Si pasó las validaciones y hubo cambios, actualizamos
+                    r.fecha = f;
+                    r.entrada = e || null;
+                    r.salida = s || null;
+                    r.tiempoFuera = tf;
+                    const t = calcularHoras(r.entrada, r.salida, r.tiempoFuera);
+                    r.horas = t?.horas || 0;
+                    r.minutos = t?.minutos || 0;
+                    r.total = t?.total || 0;
+                    registros.sort((a, b) => {
+                        if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
+                        return (b.entrada || '').localeCompare(a.entrada || '');
+                    });
+
+                    HistoryManager.saveState(registros);
+
+                    const saved = await guardarYActualizar();
+
+                    if (saved) {
+                        UILogic.mostrarToast('Registro actualizado', 'success');
+                        UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                        UILogic.cerrarEdicion();
+                    } else {
+                        UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                    }
+                }
+
+                function guardarConfig() {
+                    const d = parseFloat($('config-dias-habiles').value);
+                    const vd = parseFloat($('config-horas-diarias').value);
+
+                    // Validación básica
+                    if (isNaN(d) || d < 1 || d > 7) {
+                        UILogic.mostrarToast('Días hábiles inválidos', 'error');
+                        return;
+                    }
+
+                    if (isNaN(vd) || vd < 0 || vd > 24) {
+                        UILogic.mostrarToast('Horas diarias inválidas', 'error');
+                        return;
+                    }
+
+                    // --- NUEVA LÓGICA: DETECTAR CAMBIOS ---
+                    // Comparamos los valores nuevos (d, vd) con los actuales (diasHabiles, horasDiarias)
+                    if (d === diasHabiles && vd === horasDiarias) {
+                        UILogic.mostrarToast('Sin cambios', 'info');
+                        UILogic.cerrarConfig();
+                        return; // Salimos sin hacer nada más
+                    }
+                    // --------------------------------------
+
+                    diasHabiles = d;
+                    horasDiarias = vd;
+
+                    // Recalcular registros especiales si cambiaron las horas diarias
+                    registros.forEach(r => {
+                        if (r.entrada === '00:00' && r.salida === '00:00') {
+                            const t = calcularHoras('00:00', '00:00', r.tiempoFuera || null);
+                            r.horas = t?.horas || 0;
+                            r.minutos = t?.minutos || 0;
+                            r.total = t?.total || 0;
+                        }
+                    });
+
+                    try {
+                        localStorage.setItem('diasHabiles', diasHabiles);
+                        localStorage.setItem('horasDiarias', horasDiarias);
+                        localStorage.removeItem('horasSemanales');
+                    } catch (e) {
+                        UILogic.mostrarToast('Error al guardar', 'error');
+                        return;
+                    }
+                    guardarYActualizar(true);
+
+                    if (window.PerfilManager) {
+                        PerfilManager.guardarDatosPerfilActual();
+                    }
+                    UILogic.mostrarToast('Configuración guardada', 'success');
+                    UILogic.cerrarConfig();
+                }
+
+                async function borrarTodoHistorial() {
+                    const totalRegistros = registros.length;
+                    if (totalRegistros === 0) {
+                        UILogic.mostrarToast('No hay registros para borrar', 'info');
+                        return;
+                    }
+
+                    const confirmar = confirm(`⚠️ ¿ESTÁS SEGURO?\n\nEsto eliminará TODOS los ${totalRegistros} registros \n\nEsta accion se puede DESHACER antes de cerrar la pagina.`);
+
+                    if (!confirmar) return;
+
+                    // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
+                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                    const storageKey = `breakStartTime_${perfilId}`;
+                    localStorage.removeItem(storageKey);
+
+                    registros = [];
+                    registrosVisibles = 10;
+
+                    HistoryManager.saveState(registros);
+
+                    if (await guardarConIntegridad(registros)) {
+                        UILogic.actualizarUI();
+                        UILogic.mostrarToast(`${totalRegistros} registros eliminados`, 'success');
+                        UILogic.cerrarConfig();
+                    }
+                }
+
+                function cargarMasRegistros() {
+                    const totalRestantes = registros.length - registrosVisibles;
+                    if (totalRestantes > 0) {
+                        registrosVisibles += 10;
+                        if (registrosVisibles > registros.length) {
+                            registrosVisibles = registros.length;
+                        }
+
+                        // 🔧 Guardar posición de scroll antes de actualizar
+                        const lista = document.getElementById('lista-registros');
+                        const scrollPos = lista ? lista.scrollTop : 0;
+
+                        UILogic.actualizarUI();
+
+                        // 🔧 Restaurar posición de scroll
+                        if (lista) {
+                            requestAnimationFrame(() => {
+                                lista.scrollTop = scrollPos;
+                            });
+                        }
+                    }
+                }
+
+                function exportarJSON() {
+                    const data = { registros, diasHabiles, horasDiarias, fecha: new Date().toISOString(), version: S.SECURITY_LIMITS.SCHEMA_VERSION };
+                    try {
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `horarios_${new Date().toISOString().split('T')[0]}.json`; //nombre del archivo json al exportar
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        UILogic.mostrarToast('Datos exportados', 'success');
+                    } catch (e) {
+                        UILogic.mostrarToast('Error al exportar', 'error');
+                    }
+                }
+
+                function importarDatos(modo = 'replace') {
+                    const fileInput = $('file-import');
+                    const file = fileInput.files[0];
+
+                    if (!file) {
+                        UILogic.mostrarToast('Selecciona un archivo primero', 'error');
+                        return;
+                    }
+                    if (file.size > S.SECURITY_LIMITS.MAX_JSON_SIZE) {
+                        UILogic.mostrarToast('Archivo muy grande', 'error');
+                        return;
+                    }
+
+                    // Validación estricta de MIME
+                    if (!file.type || file.type !== 'application/json') {
+                        UILogic.mostrarToast('Solo se permiten archivos JSON', 'error');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            // Validar que el contenido no esté vacío
+                            const contenido = e.target.result;
+                            if (!contenido || contenido.trim().length === 0) {
+                                UILogic.mostrarToast('Archivo vacío', 'error');
+                                return;
+                            }
+
+                            // Validar tamaño del contenido antes de parsear
+                            if (contenido.length > S.SECURITY_LIMITS.MAX_JSON_SIZE) {
+                                UILogic.mostrarToast('Contenido del archivo demasiado grande', 'error');
+                                return;
+                            }
+
+                            // Parse seguro con protección contra Prototype Pollution
+                            const data = JSON.parse(contenido, (key, value) => {
+                                // Bloquear propiedades peligrosas
+                                if (['__proto__', 'constructor', 'prototype'].includes(key)) {
+                                    console.warn('⚠️ Intento de prototype pollution bloqueado');
+                                    return undefined;
+                                }
+                                return value;
+                            });
+
+                            // claves permitidas
+                            const allowedRootKeys = ['registros', 'diasHabiles', 'horasDiarias', 'fecha', 'version', 'hash', 'timestamp'];
+                            const dataKeys = Object.keys(data);
+                            const hasInvalidKeys = dataKeys.some(k => !allowedRootKeys.includes(k));
+
+                            if (hasInvalidKeys) {
+                                UILogic.mostrarToast('Archivo con estructura sospechosa', 'error');
+                                return;
+                            }
+
+                            //Validación estricta de estructura
+                            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                                UILogic.mostrarToast('Estructura de archivo inválida', 'error');
+                                return;
+                            }
+
+                            if (!data.registros || !Array.isArray(data.registros)) {
+                                UILogic.mostrarToast('Archivo inválido o corrupto', 'error');
+                                return;
+                            }
+
+                            //Validar límite de registros antes de procesar
+                            if (data.registros.length > S.SECURITY_LIMITS.MAX_REGISTROS) {
+                                UILogic.mostrarToast(`Máximo ${S.SECURITY_LIMITS.MAX_REGISTROS} registros permitidos`, 'error');
+                                return;
+                            }
+
+                            //Filtrar y normalizar datos
+                            const registrosImportados = data.registros.filter(r => {
+                                // Asegurar que tiempoFuera exista y sea null o string
+                                if (!r.hasOwnProperty('tiempoFuera')) r.tiempoFuera = null;
+                                if (r.tiempoFuera === '') r.tiempoFuera = null;
+
+                                //Normalizar tipos numéricos
+                                if (typeof r.horas === 'string') r.horas = parseFloat(r.horas);
+                                if (typeof r.minutos === 'string') r.minutos = parseFloat(r.minutos);
+                                if (typeof r.total === 'string') r.total = parseFloat(r.total);
+
+                                return S.validarRegistroSeguro(r);
+                            });
+
+                            if (registrosImportados.length === 0) {
+                                UILogic.mostrarToast('No se encontraron registros válidos', 'warning');
+                                return;
+                            }
+
+                            // Recalcular horas para asegurar consistencia
+                            registrosImportados.forEach(r => {
+                                const t = calcularHoras(r.entrada, r.salida, r.tiempoFuera || null);
+                                r.horas = t?.horas || 0;
+                                r.minutos = t?.minutos || 0;
+                                r.total = t?.total || 0;
+                            });
+
+                            // --- MODO REEMPLAZAR ---
+                            if (modo === 'replace') {
+                                const confirmMsg = `⚠️ ATENCIÓN\n\nSe borrarán tus datos actuales y se reemplazarán por ${registrosImportados.length} registros del archivo.\n\n¿Estás seguro?`;
+                                if (!confirm(confirmMsg)) return;
+
+                                registros = registrosImportados;
+
+                                //Validación estricta de tipos de configuración
+                                if (data.diasHabiles !== undefined) {
+                                    const diasParsed = typeof data.diasHabiles === 'string' ? parseFloat(data.diasHabiles) : data.diasHabiles;
+                                    if (Number.isFinite(diasParsed) && diasParsed >= 1 && diasParsed <= 7) {
+                                        diasHabiles = diasParsed;
+                                    }
+                                }
+
+                                if (data.horasDiarias !== undefined) {
+                                    const horasParsed = typeof data.horasDiarias === 'string' ? parseFloat(data.horasDiarias) : data.horasDiarias;
+                                    if (Number.isFinite(horasParsed) && horasParsed >= 1 && horasParsed <= 24) {
+                                        horasDiarias = horasParsed;
+                                    }
+                                }
+
+                                finalizarImportacionAndSave(`Se reemplazaron los datos por ${registrosImportados.length} registros.`);
+                            }
+
+                            // --- MODO COMBINAR ---
+                            else if (modo === 'merge') {
+                                const fechasExistentes = new Set(registros.map(r => r.fecha));
+                                const nuevos = registrosImportados.filter(imp => !fechasExistentes.has(imp.fecha));
+
+                                if (nuevos.length === 0) {
+                                    UILogic.mostrarToast('No hay días nuevos para agregar', 'info');
+                                    return;
+                                }
+
+                                //Validar que no se exceda el límite total
+                                if (registros.length + nuevos.length > S.SECURITY_LIMITS.MAX_REGISTROS) {
+                                    UILogic.mostrarToast(`Límite alcanzado. Solo se pueden agregar ${S.SECURITY_LIMITS.MAX_REGISTROS - registros.length} registros más`, 'error');
+                                    return;
+                                }
+
+                                registros = registros.concat(nuevos);
+                                finalizarImportacionAndSave(`Se combinaron datos. ${nuevos.length} días nuevos agregados.`);
+                            }
+
+                        } catch (err) {
+                            console.error('Error en importación:', err);
+                            if (err instanceof SyntaxError) {
+                                UILogic.mostrarToast('Archivo JSON mal formado', 'error');
+                            } else {
+                                UILogic.mostrarToast('Error al procesar el archivo', 'error');
+                            }
+                        }
+                    };
+
+                    // Manejar errores de lectura
+                    reader.onerror = () => {
+                        UILogic.mostrarToast('Error al leer el archivo', 'error');
+                    };
+
+                    reader.readAsText(file);
+                }
+
+                async function finalizarImportacionAndSave(mensajeExito) {
+                    registros.sort((a, b) => {
+                        if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
+                        return (b.entrada || '').localeCompare(a.entrada || '');
+                    });
+
+                    HistoryManager.saveState(registros);
+
+                    if (await guardarYActualizar()) {
+                        try {
+                            localStorage.setItem('diasHabiles', diasHabiles);
+                            localStorage.setItem('horasDiarias', horasDiarias);
+                        } catch (ex) {
+                            // Manejo explícito de errores
+                            console.error('Error guardando configuración:', ex);
+                            UILogic.mostrarToast('Datos importados pero configuración no guardada', 'warning');
+                        }
+
+                        UILogic.mostrarToast(mensajeExito, 'success');
+                        UILogic.cerrarImportar();
+                        UILogic.cerrarConfig();
+                        $('file-import').value = '';
+                    }
+                }
+
+                function calcularBufferSemanal(inicioSemana, fechaHoy) {
+                    const horasDiariasLocal = horasDiarias;
+                    let buffer = 0;
+
+                    // Filtrar registros relevantes una sola vez
+                    const registrosRango = registros.filter(r =>
+                        r.fecha >= inicioSemana && r.fecha <= fechaHoy
+                    );
+
+                    // Crear Map para búsqueda
+                    const registrosMap = new Map(
+                        registrosRango.map(r => [r.fecha, r])
+                    );
+
+                    let fechaIteracion = new Date(inicioSemana.replace(/-/g, '/') + ' 00:00:00');
+                    let fechaLimite = new Date(fechaHoy.replace(/-/g, '/') + ' 00:00:00');
+
+                    while (fechaIteracion <= fechaLimite) {
+                        const y = fechaIteracion.getFullYear();
+                        const m = String(fechaIteracion.getMonth() + 1).padStart(2, '0');
+                        const d = String(fechaIteracion.getDate()).padStart(2, '0');
+                        const isoDate = `${y}-${m}-${d}`;
+
+                        const numDia = fechaIteracion.getDay();
+                        let esDiaLaboralConfigurado = false;
+
+                        if (numDia === 0) {
+                            esDiaLaboralConfigurado = (diasHabiles === 7);
+                        } else {
+                            esDiaLaboralConfigurado = (numDia <= diasHabiles);
+                        }
+
+                        const r = registrosMap.get(isoDate);
+                        let horasObjetivoDia = 0;
+                        let horasHechasDia = 0;
+
+                        const esFeriado = r && r.entrada === '00:00' && r.salida === '00:00';
+                        const esAusencia = r && r.entrada === '11:11' && r.salida === '11:11';
+                        const esVacaciones = r && r.entrada === '22:22' && r.salida === '22:22';
+
+                        const tieneSalida = r && r.salida && !esFeriado && !esAusencia && !esVacaciones;
+                        const esDiaPasado = isoDate < fechaHoy;
+
+                        if (esDiaLaboralConfigurado && !esFeriado && !esAusencia && !esVacaciones && (esDiaPasado || (isoDate === fechaHoy && tieneSalida))) {
+                            horasObjetivoDia = horasDiariasLocal;
+                        }
+
+                        if (r && !esFeriado && !esAusencia && !esVacaciones) {
+                            if (r.salida) {
+                                horasHechasDia = r.total;
+                            }
+                        }
+
+                        buffer += (horasHechasDia - horasObjetivoDia);
+                        fechaIteracion.setDate(fechaIteracion.getDate() + 1);
+                    }
+                    return buffer;
+                }
+
+                function aplicarFiltros() {
+                    const desde = $('filtro-fecha-desde').value;
+                    const hasta = $('filtro-fecha-hasta').value;
+                    const tipo = $('filtro-tipo').value;
+
+                    if (!desde && !hasta && !tipo) {
+                        UILogic.mostrarToast('Selecciona al menos un filtro', 'warning');
+                        return;
+                    }
+
+                    filtroActivo = true;
+                    filtroDesde = desde || null;
+                    filtroHasta = hasta || null;
+                    filtroTipo = tipo || null;
+
+                    guardarYActualizar(false);
+                    UILogic.cerrarFiltros();
+
+                    let mensaje = 'Filtro aplicado';
+                    if (tipo) {
+                        const tipos = {
+                            'normal': 'Normales',
+                            'feriado': 'Feriados',
+                            'ausencia': 'Ausencias',
+                            'vacaciones': 'Vacaciones'
+                        };
+                        mensaje += `: ${tipos[tipo]}`;
+                    }
+                    UILogic.mostrarToast(mensaje, 'success');
+                    document.getElementById('btn-filtro').classList.add('filtro-activo');
+                }
+
+                function limpiarFiltros() {
+                    filtroActivo = false;
+                    filtroDesde = null;
+                    filtroHasta = null;
+                    filtroTipo = null;
+                    $('filtro-fecha-desde').value = '';
+                    $('filtro-fecha-hasta').value = '';
+                    $('filtro-tipo').value = '';
+
+                    guardarYActualizar(false);
+                    UILogic.cerrarFiltros();
+                    UILogic.mostrarToast('Filtro eliminado', 'info');
+                    document.getElementById('btn-filtro').classList.remove('filtro-activo');
+                }
+
+                function obtenerRegistrosFiltrados() {
+                    if (!filtroActivo) return registros;
+
+                    return registros.filter(r => {
+                        // Filtro por fechas
+                        if (filtroDesde && r.fecha < filtroDesde) return false;
+                        if (filtroHasta && r.fecha > filtroHasta) return false;
+
+                        if (filtroTipo) {
+                            const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
+                            const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+                            const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
+
+                            switch (filtroTipo) {
+                                case 'feriado':
+                                    if (!esFeriado) return false;
+                                    break;
+                                case 'ausencia':
+                                    if (!esAusencia) return false;
+                                    break;
+                                case 'vacaciones':
+                                    if (!esVacaciones) return false;
+                                    break;
+                                case 'normal':
+                                    if (esFeriado || esAusencia || esVacaciones) return false;
+                                    break;
+                            }
+                        }
+
+                        return true;
+                    });
+                }
+
+                return {
+                    registros: () => registros,
+                    horasSemanales: () => (horasDiarias * diasHabiles),
+                    diasHabiles: () => diasHabiles,
+                    horasDiarias: () => horasDiarias,
+                    setDiasHabiles: (v) => diasHabiles = v,
+                    setHorasDiarias: (v) => horasDiarias = v,
+                    editandoId: () => editandoId,
+                    setEditandoId: (id) => editandoId = id,
+                    vistaActual: () => vistaActual,
+                    setVistaActual: (v) => vistaActual = v,
+                    registrosVisibles: () => registrosVisibles,
+                    setRegistrosVisibles: (v) => registrosVisibles = v,
+                    cacheSemana: () => cacheSemana,
+                    setCacheSemana: (c) => cacheSemana = c,
+                    cargarConVerificacion,
+                    cargarConfiguracion,
+                    calcularHoras,
+                    calcularHorasFeriadoEnRango,
+                    guardarYActualizar,
+                    agregarRegistro,
+                    eliminarRegistroActual,
+                    editarRegistro,
+                    guardarEdicion,
+                    guardarConfig,
+                    borrarTodoHistorial,
+                    cargarMasRegistros,
+                    exportarJSON,
+                    importarDatos,
+                    calcularBufferSemanal,
+                    aplicarFiltros,
+                    limpiarFiltros,
+                    obtenerRegistrosFiltrados,
+                    registrarVacaciones,
+                    borrarPeriodo,
+                    undoAction: function () {
+                        const prevState = HistoryManager.undo();
+                        if (prevState) {
+                            registros.splice(0, registros.length, ...prevState);
+                            guardarYActualizar();
+                            UILogic.mostrarToast('Deshecho', 'info');
+                        }
+                    },
+                    redoAction: function () {
+                        const nextState = HistoryManager.redo();
+                        if (nextState) {
+                            registros.splice(0, registros.length, ...nextState);
+                            guardarYActualizar();
+                            UILogic.mostrarToast('Rehecho', 'info');
+                        }
+                    }
+
+                };
+
+            })(SecurityAndUtils);
+            // ====================================================================
+            // III. UI LOGIC MODULE
+            // ====================================================================
+            const UILogic = (function (S, D) {
+
+                function mostrarError(inputId, errorId) {
+                    const input = $(inputId);
+                    const error = $(errorId);
+                    if (input) input.classList.add('error');
+                    if (error) error.style.display = 'block';
+                }
+
+                function limpiarError(inputId, errorId) {
+                    const input = $(inputId);
+                    const error = $(errorId);
+                    if (input) input.classList.remove('error');
+                    if (error) error.style.display = 'none';
+                }
+
+                let toastTimeout = null;
+
+                function mostrarToast(mensaje, tipo = 'info') {
+                    const toast = $('toast');
+                    const textoLimpio = S.sanitizeString(mensaje, 200);
+
+                    // Limpiar timeouts anteriores
+                    if (toastTimeout) {
+                        clearTimeout(toastTimeout);
+                        toastTimeout = null;
+                    }
+
+                    // Remover clase show si existe (para reset de animación)
+                    toast.classList.remove('show');
+
+                    // Actualizar contenido y tipo
+                    toast.textContent = textoLimpio;
+                    toast.className = `toast ${tipo}`;
+
+                    // Mostrar toast después de un pequeño delay (para permitir reset)
+                    setTimeout(() => toast.classList.add('show'), 10);
+
+                    // Programar ocultación
+                    toastTimeout = setTimeout(() => {
+                        toast.classList.remove('show');
+                        toastTimeout = null;
+                    }, 3000);
+                }
+
+                function resetearBoton(btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg class="icon"><use href="#icon-save"/></svg> Registrar';
+                }
+
+                function restaurarBotonGuardarEdicion(btnGuardar) {
+                    btnGuardar.disabled = false;
+                    btnGuardar.innerHTML = '<svg class="icon"><use href="#icon-save"/></svg> Guardar';
+                }
+
+                function obtenerFechaHoy() {
+                    const now = new Date();
+                    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                }
+
+                function obtenerNombreDia(f) {
+                    if (!f) return '';
+                    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                    try {
+                        const [y, m, d] = f.split('-').map(Number);
+                        const date = new Date(y, m - 1, d);
+                        if (isNaN(date.getTime())) return '';
+                        return dias[date.getDay()];
+                    } catch (e) { return ''; }
+                }
+
+                function obtenerSemanaActual() {
+                    const cache = D.cacheSemana();
+                    const hoy = new Date().toDateString();
+                    if (cache.calculado === hoy) return { inicio: cache.inicio, fin: cache.fin };
+                    const now = new Date();
+                    const dia = now.getDay();
+                    const offset = dia === 0 ? -6 : 1 - dia;
+                    const lun = new Date(now);
+                    lun.setDate(now.getDate() + offset);
+                    lun.setHours(0, 0, 0, 0);
+                    const vie = new Date(lun);
+                    vie.setDate(lun.getDate() + 4);
+                    vie.setHours(23, 59, 59, 999);
+                    const inicio = lun.toISOString().split('T')[0];
+                    const fin = vie.toISOString().split('T')[0];
+                    D.setCacheSemana({ inicio, fin, calculado: hoy });
+                    return { inicio, fin };
+                }
+
+                function horasATexto(t) {
+                    const totalHoras = Math.max(0, t);
+
+                    const h = Math.floor(totalHoras);
+                    const m = Math.round((totalHoras - h) * 60);
+
+                    let partes = [];
+
+                    if (h > 0) {
+                        partes.push(`${h} ${h === 1 ? 'hora' : 'horas'}`);
+                    }
+
+                    if (m > 0) {
+                        partes.push(`${m} ${m === 1 ? 'minuto' : 'minutos'}`);
+                    } else if (h === 0 && m === 0) {
+                        partes.push('0 minutos');
+                    }
+
+                    return partes.join(' ');
+                }
+
+                function formatoDiferencia(tiempoTotalHoras) {
+                    const horasDiarias = D.horasDiarias();
+                    const objetivoMinutos = horasDiarias * 60;
+                    const actualMinutos = Math.round(tiempoTotalHoras * 60);
+                    let diferenciaMinutos = actualMinutos - objetivoMinutos;
+                    if (diferenciaMinutos === 0) return '';
+                    const signo = diferenciaMinutos > 0 ? '+' : '-';
+                    const absMinutos = Math.abs(diferenciaMinutos);
+                    const h = Math.floor(absMinutos / 60);
+                    const m = absMinutos % 60;
+                    let diferenciaTexto = '';
+                    if (h > 0) diferenciaTexto += `${h}h`;
+                    if (m > 0 || h === 0) {
+                        if (h > 0) diferenciaTexto += ' ';
+                        diferenciaTexto += `${m}m`;
+                    }
+                    if (diferenciaTexto === '') return '';
+                    return `${signo}${diferenciaTexto}`;
+                }
+
+                function formatoTituloMes(claveMes) {
+                    const [año, mes] = claveMes.split('-');
+                    const fecha = new Date(año, mes - 1, 1);
+                    const opciones = { month: 'long', year: 'numeric' };
+                    let nombre = fecha.toLocaleDateString('es-ES', opciones);
+                    return nombre.charAt(0).toUpperCase() + nombre.slice(1);
+                }
+
+                function agruparRegistrosPorMes(registros) {
+                    // Validar entrada
+                    if (!Array.isArray(registros)) {
+                        console.warn('agruparRegistrosPorMes: entrada inválida');
+                        return new Map();
+                    }
+
+                    const grupos = new Map();
+                    registros.forEach(r => {
+                        // Validar cada registro
+                        if (!r || typeof r !== 'object' || !r.fecha || typeof r.fecha !== 'string') {
+                            return;
+                        }
+
+                        // Validar longitud mínima
+                        if (r.fecha.length < 7) {
+                            return;
+                        }
+
+                        const claveMes = r.fecha.substring(0, 7);
+                        if (!grupos.has(claveMes)) {
+                            grupos.set(claveMes, []);
+                        }
+                        grupos.get(claveMes).push(r);
+                    });
+                    return grupos;
+                }
+
+                // Función auxiliar para identificar tipo de registro
+                function obtenerTipoRegistro(registro) {
+                    if (!registro) return null;
+
+                    const entrada = registro.entrada;
+                    const salida = registro.salida;
+
+                    if (entrada === '00:00' && salida === '00:00') return 'feriado';
+                    if (entrada === '11:11' && salida === '11:11') return 'ausencia';
+                    if (entrada === '22:22' && salida === '22:22') return 'vacaciones';
+
+                    return null; // Registro normal
+                }
+
+                // Función auxiliar para verificar si una fecha es consecutiva a otra
+                function esFechaConsecutiva(fechaActual, fechaSiguiente) {
+                    const actual = new Date(fechaActual.replace(/-/g, '/') + ' 00:00:00');
+                    const siguiente = new Date(fechaSiguiente.replace(/-/g, '/') + ' 00:00:00');
+
+                    // Sumar 1 día a la fecha actual
+                    actual.setDate(actual.getDate() - 1);
+
+                    return actual.toISOString().split('T')[0] === fechaSiguiente;
+                }
+
+                // Función principal mejorada
+                function agruparRegistrosConsecutivos(registros) {
+                    if (!registros || registros.length === 0) return [];
+
+                    const resultado = [];
+                    let i = 0;
+
+                    while (i < registros.length) {
+                        const registroActual = registros[i];
+                        const tipoActual = obtenerTipoRegistro(registroActual);
+
+                        // Si es un registro normal, agregar individualmente
+                        if (tipoActual === null) {
+                            resultado.push({
+                                tipo: 'individual',
+                                registros: [registroActual]
+                            });
+                            i++;
+                            continue;
+                        }
+
+                        // Buscar registros consecutivos del mismo tipo
+                        const grupo = [registroActual];
+                        let j = i + 1;
+
+                        while (j < registros.length) {
+                            const registroSiguiente = registros[j];
+                            const tipoSiguiente = obtenerTipoRegistro(registroSiguiente);
+
+                            // Si cambió el tipo, terminar el grupo
+                            if (tipoSiguiente !== tipoActual) break;
+
+                            // Verificar si es fecha consecutiva
+                            const ultimaFecha = grupo[grupo.length - 1].fecha;
+                            if (!esFechaConsecutiva(ultimaFecha, registroSiguiente.fecha)) break;
+
+                            // Agregar al grupo
+                            grupo.push(registroSiguiente);
+                            j++;
+                        }
+
+                        // Agregar al resultado (grupo o individual)
+                        if (grupo.length > 1) {
+                            resultado.push({
+                                tipo: 'grupo',
+                                subtipo: tipoActual,
+                                registros: grupo
+                            });
+                        } else {
+                            resultado.push({
+                                tipo: 'individual',
+                                registros: grupo
+                            });
+                        }
+
+                        i = j;
+                    }
+
+                    return resultado;
+                }
+
+                function crearItemRegistroIndividual(r, horasDiarias, idResaltar = null) { // <--- NUEVO
+                    const item = document.createElement('div');
+                    const hoy = obtenerFechaHoy();
+
+
+
+                    let className = r.fecha === hoy ? 'registro-item hoy' : 'registro-item';
+
+                    // Si el ID de este registro coincide con el que queremos resaltar...
+                    if (idResaltar && r.id === idResaltar) {
+                        className += ' nuevo-registro-animacion';
+                    }
+
+                    item.className = className; // Asignamos las clases
+
+                    item.onclick = () => D.editarRegistro(r.id);
+
+                    const info = document.createElement('div');
+                    info.className = 'registro-info';
+
+                    const isFeriadoContabilizado = r.entrada === '00:00' && r.salida === '00:00';
+                    const isAusencia = r.entrada === '11:11' && r.salida === '11:11';
+                    const isVacaciones = r.entrada === '22:22' && r.salida === '22:22';
+
+                    const fechaEl = document.createElement('div');
+                    fechaEl.className = 'registro-fecha';
+
+                    let etiqueta = '';
+                    if (isFeriadoContabilizado) etiqueta = ' 🥳 (Feriado)';
+                    else if (isAusencia) etiqueta = ' ✈️ (Ausencia)';
+                    else if (isVacaciones) etiqueta = ' 🏖️ (Vacaciones)';
+
+                    fechaEl.textContent = `${obtenerNombreDia(r.fecha)} ${r.fecha.substring(8)}${etiqueta}`;
+
+                    const tfText = r.tiempoFuera && r.tiempoFuera !== '' ? ` (${r.tiempoFuera} Fuera)` : '';
+
+                    const horasEl = document.createElement('div');
+                    horasEl.className = 'registro-horas';
+
+                    if (isFeriadoContabilizado) {
+                        horasEl.textContent = 'Día no laboral';
+                    } else if (isAusencia) {
+                        horasEl.textContent = 'Licencia / Ausencia';
+                    } else if (isVacaciones) {
+                        horasEl.textContent = 'Vacaciones';
+                    } else {
+                        horasEl.textContent = `${r.entrada || '-'} → ${r.salida || '-'}${tfText}`;
+                    }
+
+                    const totalEl = document.createElement('div');
+                    totalEl.className = 'registro-total';
+                    let totalText = 'Incompleto';
+                    totalEl.classList.remove('green-text', 'red-text', 'purple-text');
+
+                    if (isFeriadoContabilizado) {
+                        totalText = 'Justificado';
+                        totalEl.classList.add('purple-text');
+                    } else if (isAusencia) {
+                        totalText = 'Justificado';
+                        totalEl.classList.add('purple-text');
+                    } else if (isVacaciones) {
+                        totalText = 'Justificado';
+                        totalEl.classList.add('purple-text');
+                    } else if (r.entrada && r.salida) {
+                        totalText = `${r.horas}h ${r.minutos}m`;
+
+                        // Sin objetivo: solo mostrar tiempo sin colores
+                        if (horasDiarias === 0) {
+                            // No aplicar color, dejar el texto por defecto
+                        } else {
+                            const diffText = formatoDiferencia(r.total);
+                            if (r.total >= horasDiarias) {
+                                totalEl.classList.add('green-text');
+                            } else {
+                                totalEl.classList.add('red-text');
+                            }
+                            if (diffText) totalText += ` (${diffText})`;
+                        }
+                    } else if (r.entrada && !r.salida) {
+                        const esHoy = r.fecha === hoy;
+                        if (esHoy) {
+                            totalText = 'En curso . . .';
+                            totalEl.classList.add('yellow-text');
+                        } else {
+                            totalText = 'Incompleto';
+                            totalEl.classList.add('yellow-text');
+                        }
+                    } else {
+                        totalText = 'Sin datos';
+                    }
+
+                    totalEl.textContent = totalText;
+                    info.appendChild(fechaEl);
+                    info.appendChild(horasEl);
+                    info.appendChild(totalEl);
+                    item.appendChild(info);
+
+                    return item;
+                }
+
+                function setProgressBarColor(progressEl, status) {
+                    if (!progressEl) return;
+                    progressEl.className = 'progress-fill';
+                    progressEl.classList.add(status);
+                }
+
+                function actualizarListaRegistros(registros, idNuevo = null) {
+                    const lista = $('lista-registros');
+                    const btnCargarMas = $('btn-cargar-mas');
+
+                    function actualizarVisibilidadBotonCargarMas() {
+                        const limiteVisibles = D.registrosVisibles();
+                        const hoy = obtenerFechaHoy();
+                        const mesHoy = hoy.substring(0, 7);
+
+                        // Obtener meses actualmente expandidos
+                        const mesesExpandidosActuales = new Set();
+                        lista.querySelectorAll('.registro-mes-container').forEach(container => {
+                            const detalle = container.querySelector('.registro-mes-detalle');
+                            if (detalle && detalle.classList.contains('expanded')) {
+                                const header = container.querySelector('.registro-mes-header');
+                                if (header && header.dataset.mesId) {
+                                    mesesExpandidosActuales.add(header.dataset.mesId);
+                                }
+                            }
+                        });
+
+                        // Contar items en meses expandidos
+                        const registrosAMostrar = D.obtenerRegistrosFiltrados();
+                        const gruposPorMes = agruparRegistrosPorMes(registrosAMostrar);
+
+                        let totalItemsExpandidos = 0;
+                        let totalItemsVisiblesExpandidos = 0;
+
+                        gruposPorMes.forEach((registrosDelMes, claveMes) => {
+                            const estaExpandido = mesesExpandidosActuales.has(claveMes) || claveMes === mesHoy;
+                            if (estaExpandido) {
+                                const grupos = agruparRegistrosConsecutivos(registrosDelMes);
+                                totalItemsExpandidos += grupos.length;
+                            }
+                        });
+
+                        // Contar cuántos de esos items están actualmente visibles
+                        totalItemsVisiblesExpandidos = Math.min(limiteVisibles, totalItemsExpandidos);
+
+                        // Mostrar botón solo si hay más items en meses expandidos
+                        if (totalItemsVisiblesExpandidos < totalItemsExpandidos) {
+                            const restantes = totalItemsExpandidos - totalItemsVisiblesExpandidos;
+                            const aCargar = Math.min(10, restantes);
+                            btnCargarMas.style.display = 'flex';
+                            btnCargarMas.title = `Cargar ${aCargar} más (${restantes} restantes)`;
+                        } else {
+                            btnCargarMas.style.display = 'none';
+                        }
+                    }
+
+                    // Guardar estado de grupos expandidos
+                    const gruposExpandidos = new Set();
+                    lista.querySelectorAll('.registro-grupo-detalle[style*="display: block"]').forEach(detalle => {
+                        const container = detalle.closest('.registro-grupo-container');
+                        if (container) {
+                            const header = container.querySelector('.registro-item');
+                            const fechaTexto = header?.querySelector('.registro-horas')?.textContent;
+                            if (fechaTexto) {
+                                gruposExpandidos.add(fechaTexto.trim());
+                            }
+                        }
+                    });
+
+                    // NUEVO: Guardar meses expandidos usando un identificador único
+                    const mesesExpandidos = new Set();
+                    lista.querySelectorAll('.registro-mes-container').forEach(container => {
+                        const detalle = container.querySelector('.registro-mes-detalle');
+                        if (detalle && detalle.classList.contains('expanded')) {
+                            const header = container.querySelector('.registro-mes-header');
+                            if (header && header.dataset.mesId) {
+                                mesesExpandidos.add(header.dataset.mesId);
+                            }
+                        }
+                    });
+
+                    lista.innerHTML = '';
+                    const horasDiarias = D.horasDiarias();
+
+                    const registrosAMostrar = D.obtenerRegistrosFiltrados();
+
+                    if (registrosAMostrar.length === 0) {
+                        lista.innerHTML = '<div class="empty-state">No hay registros</div>';
+                        btnCargarMas.style.display = 'none';
+                        return;
+                    }
+
+                    const gruposPorMes = agruparRegistrosPorMes(registrosAMostrar);
+                    const fragmento = document.createDocumentFragment();
+
+                    let todosLosItems = [];
+
+                    gruposPorMes.forEach((registrosDelMes, claveMes) => {
+                        const grupos = agruparRegistrosConsecutivos(registrosDelMes);
+
+                        todosLosItems.push({
+                            tipo: 'titulo',
+                            mes: claveMes
+                        });
+
+                        grupos.forEach(grupo => {
+                            todosLosItems.push({
+                                tipo: 'item',
+                                grupo: grupo,
+                                mes: claveMes
+                            });
+                        });
+                    });
+
+                    const soloItems = todosLosItems.filter(item => item.tipo === 'item');
+                    const limiteVisibles = D.registrosVisibles();
+                    const itemsAMostrar = soloItems.slice(0, limiteVisibles);
+
+                    let mesActual = null;
+                    let contenedorMesActual = null;
+                    let detalleMesActual = null;
+
+                    // Obtener mes actual para expandirlo por defecto
+                    const hoy = obtenerFechaHoy();
+                    const mesHoy = hoy.substring(0, 7);
+
+                    itemsAMostrar.forEach(itemData => {
+                        const grupo = itemData.grupo;
+                        const fechaItem = grupo.registros[0].fecha;
+                        const mesItem = fechaItem.substring(0, 7);
+
+                        if (mesItem !== mesActual) {
+                            // Crear nuevo contenedor de mes
+                            contenedorMesActual = document.createElement('div');
+                            contenedorMesActual.className = 'registro-mes-container';
+
+                            // Header del mes (clickeable)
+                            const headerMes = document.createElement('h3');
+                            headerMes.className = 'registro-mes-header';
+                            headerMes.dataset.mesId = mesItem; // ID único para este mes
+
+                            // Icono chevron - crear desde cero
+                            const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                            chevron.setAttribute('class', 'icon chevron-mes');
+                            chevron.setAttribute('viewBox', '0 0 24 24');
+                            chevron.style.width = '1.2em';
+                            chevron.style.height = '1.2em';
+                            chevron.style.verticalAlign = 'middle';
+
+                            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                            use.setAttribute('href', '#icon-chevron-down');
+
+                            chevron.appendChild(use);
+
+                            // Texto del mes
+                            const textoMes = document.createTextNode(' ' + formatoTituloMes(mesItem));
+
+                            headerMes.appendChild(chevron);
+                            headerMes.appendChild(textoMes);
+
+                            // Contenedor de detalles del mes
+                            detalleMesActual = document.createElement('div');
+                            detalleMesActual.className = 'registro-mes-detalle';
+
+                            // Verificar si debe estar expandido
+                            const estabaExpandido = mesesExpandidos.has(mesItem);
+                            const esMesActual = mesItem === mesHoy;
+                            const debeEstarExpandido = estabaExpandido || esMesActual;
+
+                            if (debeEstarExpandido) {
+                                detalleMesActual.classList.add('expanded');
+                                chevron.style.transform = 'rotate(180deg)';
+                            }
+
+                            // Toggle click - usando closure para capturar las variables correctas
+                            // Toggle click - usando closure para capturar las variables correctas
+                            (function (header, detalle, chevronIcon) {
+                                header.onclick = (e) => {
+                                    e.stopPropagation();
+                                    const estaExpandido = detalle.classList.contains('expanded');
+
+                                    if (estaExpandido) {
+                                        detalle.classList.remove('expanded');
+                                        chevronIcon.style.transform = 'rotate(0deg)';
+                                    } else {
+                                        detalle.classList.add('expanded');
+                                        chevronIcon.style.transform = 'rotate(180deg)';
+                                    }
+
+                                    // 🔧 ACTUALIZAR BOTÓN "CARGAR MÁS" al cambiar estado del mes
+                                    actualizarVisibilidadBotonCargarMas();
+                                };
+                            })(headerMes, detalleMesActual, chevron);
+
+                            contenedorMesActual.appendChild(headerMes);
+                            contenedorMesActual.appendChild(detalleMesActual);
+                            fragmento.appendChild(contenedorMesActual);
+
+                            mesActual = mesItem;
+                        }
+
+                        // Agregar items al mes actual
+                        if (grupo.tipo === 'grupo') {
+                            const container = crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos);
+                            detalleMesActual.appendChild(container);
+                        } else {
+                            const r = grupo.registros[0];
+                            const item = crearItemRegistroIndividual(r, horasDiarias, idNuevo);
+                            detalleMesActual.appendChild(item);
+                        }
+                    });
+
+                    lista.appendChild(fragmento);
+
+                    actualizarVisibilidadBotonCargarMas();
+
+                    // Contar cuántos items pertenecen a meses expandidos
+                    const itemsEnMesesExpandidos = itemsAMostrar.filter(itemData => {
+                        const mesItem = itemData.grupo.registros[0].fecha.substring(0, 7);
+                        const estabaExpandido = mesesExpandidos.has(mesItem);
+                        const esMesActual = mesItem === mesHoy;
+                        return estabaExpandido || esMesActual;
+                    }).length;
+
+                    const totalItems = soloItems.length;
+                    const hayMasRegistrosEnMesesExpandidos = itemsEnMesesExpandidos < soloItems.filter(itemData => {
+                        const mesItem = itemData.grupo.registros[0].fecha.substring(0, 7);
+                        const estabaExpandido = mesesExpandidos.has(mesItem);
+                        const esMesActual = mesItem === mesHoy;
+                        return estabaExpandido || esMesActual;
+                    }).length;
+
+                    if (limiteVisibles < totalItems && hayMasRegistrosEnMesesExpandidos) {
+                        const restantes = totalItems - limiteVisibles;
+                        const aCargar = Math.min(10, restantes);
+                        btnCargarMas.style.display = 'flex';
+                        btnCargarMas.title = `Cargar ${aCargar} más (${restantes} restantes)`;
+                    } else {
+                        btnCargarMas.style.display = 'none';
+                    }
+                }
+
+                function crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos = new Set()) {
+                    const primerReg = grupo.registros[0];
+                    const ultimoReg = grupo.registros[grupo.registros.length - 1];
+
+                    const container = document.createElement('div');
+                    container.className = 'registro-grupo-container';
+
+                    // Encabezado del grupo
+                    const header = document.createElement('div');
+                    header.className = 'registro-item';
+
+                    const info = document.createElement('div');
+                    info.className = 'registro-info';
+
+                    const fechaEl = document.createElement('div');
+                    fechaEl.className = 'registro-fecha';
+
+                    const emoji = grupo.subtipo === 'feriado' ? '🥳' :
+                        grupo.subtipo === 'ausencia' ? '✈️' : '🏖️';
+                    const label = grupo.subtipo === 'feriado' ? 'Feriados' :
+                        grupo.subtipo === 'ausencia' ? 'Ausencias' : 'Vacaciones';
+
+                    fechaEl.textContent = `${emoji} ${label} (${grupo.registros.length} días)`;
+
+                    const horasEl = document.createElement('div');
+                    horasEl.className = 'registro-horas';
+                    const rangoFechas = `${primerReg.fecha.substring(8)} al ${ultimoReg.fecha.substring(8)}`;
+                    horasEl.textContent = rangoFechas;
+
+                    const totalEl = document.createElement('div');
+                    totalEl.className = 'registro-total purple-text';
+
+                    // Lista expandible
+                    const listaExpandible = document.createElement('div');
+                    listaExpandible.className = 'registro-grupo-detalle';
+
+                    // 🔑 Verificar si este grupo estaba expandido
+                    const estabaExpandido = gruposExpandidos.has(rangoFechas);
+                    listaExpandible.style.display = estabaExpandido ? 'block' : 'none';
+                    totalEl.innerHTML = estabaExpandido ?
+                        '<svg class="icon" style="width: 1em; height: 1em;"><use href="#icon-cancelar"/></svg> Ocultar' :
+                        '<svg class="icon" style="width: 1em; height: 1em;"><use href="#icon-list"/></svg> Ver detalles';
+
+                    grupo.registros.forEach(r => {
+                        const item = crearItemRegistroIndividual(r, horasDiarias);
+                        item.style.marginLeft = '1rem';
+                        listaExpandible.appendChild(item);
+                    });
+
+                    // Toggle
+                    header.onclick = (e) => {
+                        e.stopPropagation();
+                        const estaExpandido = listaExpandible.style.display !== 'none';
+                        listaExpandible.style.display = estaExpandido ? 'none' : 'block';
+                        totalEl.innerHTML = estaExpandido ?
+                            '<svg class="icon" style="width: 1em; height: 1em;"><use href="#icon-list"/></svg> Ver detalles' :
+                            '<svg class="icon" style="width: 1em; height: 1em;"><use href="#icon-cancelar"/></svg> Ocultar';
+                    };
+
+                    info.appendChild(fechaEl);
+                    info.appendChild(horasEl);
+                    info.appendChild(totalEl);
+                    header.appendChild(info);
+
+                    container.appendChild(header);
+                    container.appendChild(listaExpandible);
+
+                    return container;
+                }
+
+                function calcularEstadisticasMes(mesAnio = null) {
+                    // Si no se especifica mes, usar el actual
+                    let mesActual, añoActual;
+
+                    if (mesAnio) {
+                        const [año, mes] = mesAnio.split('-').map(Number);
+                        añoActual = año;
+                        mesActual = mes - 1; // JavaScript usa 0-11 para meses
+                    } else {
+                        const hoy = new Date();
+                        mesActual = hoy.getMonth();
+                        añoActual = hoy.getFullYear();
+                    }
+
+                    const registrosMes = D.registros().filter(r => {
+                        const [año, mes] = r.fecha.split('-').map(Number);
+                        return año === añoActual && mes === mesActual + 1;
+                    });
+
+                    // Contar feriados y ausencias
+                    const feriados = registrosMes.filter(r =>
+                        r.entrada === '00:00' && r.salida === '00:00'
+                    ).length;
+
+                    const ausencias = registrosMes.filter(r =>
+                        r.entrada === '11:11' && r.salida === '11:11'
+                    ).length;
+
+                    const vacaciones = registrosMes.filter(r =>
+                        r.entrada === '22:22' && r.salida === '22:22'
+                    ).length;
+
+                    // Filtrar solo registros válidos (excluir feriados y ausencias)
+                    const registrosValidos = registrosMes.filter(r =>
+                        r.entrada && r.salida &&
+                        r.entrada !== '00:00' && r.entrada !== '11:11' && r.entrada !== '22:22'
+                    );
+
+                    if (registrosValidos.length === 0) {
+                        return {
+                            entradaPromedio: '--:--',
+                            salidaPromedio: '--:--',
+                            diasTrabajados: 0,
+                            promedioDiario: '0h 0m',
+                            feriados: feriados,
+                            ausencias: ausencias,
+                            vacaciones: vacaciones
+                        };
+                    }
+
+                    // Calcular entrada promedio
+                    let sumaMinutosEntrada = 0;
+                    registrosValidos.forEach(r => {
+                        const [h, m] = r.entrada.split(':').map(Number);
+                        sumaMinutosEntrada += h * 60 + m;
+                    });
+                    const promedioEntrada = Math.round(sumaMinutosEntrada / registrosValidos.length);
+                    const hEntrada = Math.floor(promedioEntrada / 60);
+                    const mEntrada = promedioEntrada % 60;
+
+                    // Calcular salida promedio
+                    let sumaMinutosSalida = 0;
+                    registrosValidos.forEach(r => {
+                        const [h, m] = r.salida.split(':').map(Number);
+                        sumaMinutosSalida += h * 60 + m;
+                    });
+                    const promedioSalida = Math.round(sumaMinutosSalida / registrosValidos.length);
+                    const hSalida = Math.floor(promedioSalida / 60);
+                    const mSalida = promedioSalida % 60;
+
+                    // Calcular promedio de horas diarias
+                    const totalHoras = registrosValidos.reduce((sum, r) => sum + r.total, 0);
+                    const promedioDiario = totalHoras / registrosValidos.length;
+                    const hPromedio = Math.floor(promedioDiario);
+                    const mPromedio = Math.round((promedioDiario - hPromedio) * 60);
+
+                    return {
+                        entradaPromedio: `${String(hEntrada).padStart(2, '0')}:${String(mEntrada).padStart(2, '0')}`,
+                        salidaPromedio: `${String(hSalida).padStart(2, '0')}:${String(mSalida).padStart(2, '0')}`,
+                        diasTrabajados: registrosValidos.length,
+                        promedioDiario: `${hPromedio}h ${mPromedio}m`,
+                        feriados: feriados,
+                        ausencias: ausencias,
+                        vacaciones: vacaciones
+                    };
+                }
+
+                function actualizarEstadisticas(mesAnio = null) {
+                    const stats = calcularEstadisticasMes(mesAnio);
+
+                    const elEntrada = $('stat-entrada-promedio');
+                    const elSalida = $('stat-salida-promedio');
+                    const elDias = $('stat-dias-trabajados');
+                    const elPromedio = $('stat-promedio-diario');
+                    const elFeriados = $('stat-feriados');
+                    const elAusencias = $('stat-ausencias');
+                    const elVacaciones = $('stat-vacaciones')
+
+                    if (elEntrada) elEntrada.textContent = stats.entradaPromedio;
+                    if (elSalida) elSalida.textContent = stats.salidaPromedio;
+                    if (elDias) elDias.textContent = stats.diasTrabajados;
+                    if (elPromedio) elPromedio.textContent = stats.promedioDiario;
+                    if (elFeriados) elFeriados.textContent = stats.feriados;
+                    if (elAusencias) elAusencias.textContent = stats.ausencias;
+                    if (elVacaciones) elVacaciones.textContent = stats.vacaciones;
+                }
+
+                function esFinDeSemana() {
+                    const d = new Date().getDay();
+                    return d === 0 || d === 6;
+                }
+
+                function actualizarUI(idNuevo = null, soloReloj = false) {
+                    const registros = D.registros();
+                    const horasSemanales = D.horasSemanales();
+                    const horasDiarias = D.horasDiarias();
+                    const diasHabilesConfig = D.diasHabiles();
+                    const vistaActual = D.vistaActual();
+
+                    if (!soloReloj) {
+                        actualizarListaRegistros(registros, idNuevo);
+                    }
+
+                    const { inicio: ini, fin: fn } = obtenerSemanaActual();
+                    const hoy = obtenerFechaHoy();
+
+                    const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
+
+                    const statsEl = $('stats-semana');
+                    const progressEl = $('progress-bar');
+                    const mensajeEl = $('stats-mensaje');
+                    const tituloEl = $('stats-titulo');
+                    const hintEl = $('toggle-hint');
+                    const bufferEl = $('stats-buffer');
+
+                    if (bufferEl) {
+                        bufferEl.innerHTML = '';
+                        // Solo mostrar buffer si hay objetivo (horasDiarias > 0)
+                        if (horasDiarias > 0 && bufferSemanal !== 0) {
+                            if (Math.abs(bufferSemanal) > 0.01) {
+                                const esPositivo = bufferSemanal > 0;
+                                const bufferIcono = esPositivo ? '✅' : '⚠️';
+                                const bufferColor = esPositivo ? '#60ac94' : '#c05d76';
+                                const bufferTextoHoras = horasATexto(Math.abs(bufferSemanal));
+                                const bufferLabel = esPositivo ? 'extras' : 'faltantes';
+
+                                bufferEl.textContent = '';
+                                const span = document.createElement('span');
+                                span.style.color = bufferColor;
+                                span.style.fontWeight = '500';
+                                span.textContent = `${bufferIcono} ${bufferTextoHoras} ${bufferLabel} esta semana`;
+                                bufferEl.appendChild(span);
+                            }
+                        }
+                    }
+
+                    if (vistaActual === 'semana') {
+                        tituloEl.innerHTML = `<svg class="icon"><use href="#icon-calendar-simple" /></svg> Esta Semana`;
+
+                        const tot = registros.filter(r =>
+                            r.fecha >= ini &&
+                            r.fecha <= fn &&
+                            !(r.entrada === '00:00' && r.salida === '00:00') &&
+                            !(r.entrada === '11:11' && r.salida === '11:11') &&
+                            !(r.entrada === '22:22' && r.salida === '22:22')
+                        ).reduce((s, r) => s + r.total, 0);
+
+                        const horasDescontar = D.calcularHorasFeriadoEnRango(ini, fn);
+                        const objetivoAjustado = Math.max(0, horasSemanales - horasDescontar);
+                        const prog = objetivoAjustado > 0 ? Math.min((tot / objetivoAjustado) * 100, 100) : 100;
+
+                        if (statsEl) statsEl.innerHTML = `<div>${horasATexto(tot)}</div>`;
+                        if (progressEl) {
+                            progressEl.style.width = prog + '%';
+
+                            // Sin objetivo: color neutral
+                            if (horasDiarias === 0) {
+                                setProgressBarColor(progressEl, 'blue');
+                            } else {
+                                setProgressBarColor(progressEl, tot >= objetivoAjustado ? 'green' : 'blue');
+                            }
+                        }
+
+                        if (mensajeEl) {
+                            // SIN OBJETIVO: Solo mostrar total
+                            if (horasDiarias === 0) {
+                                mensajeEl.textContent = `Total registrado: ${horasATexto(tot)}`;
+                                mensajeEl.style.display = 'none';
+                            } else {
+                                mensajeEl.style.display = 'block';
+                                const diaSemanaHoy = new Date().getDay();
+                                let esDiaDeDescanso = false;
+
+                                if (diaSemanaHoy === 0) {
+                                    esDiaDeDescanso = (diasHabilesConfig < 7);
+                                } else {
+                                    esDiaDeDescanso = (diaSemanaHoy > diasHabilesConfig);
+                                }
+
+                                if (objetivoAjustado === 0) {
+                                    mensajeEl.textContent = `Semana sin objetivo. Total: ${horasATexto(tot)}`;
+                                } else if (esDiaDeDescanso) {
+                                    mensajeEl.textContent = tot >= objetivoAjustado ?
+                                        `Hiciste ${horasATexto(tot - objetivoAjustado)} demás` :
+                                        `Faltaron ${horasATexto(objetivoAjustado - tot)}`;
+                                } else {
+                                    mensajeEl.textContent = tot >= objetivoAjustado ?
+                                        `¡Bien! ${horasATexto(tot - objetivoAjustado)} extras` :
+                                        `Faltan ${horasATexto(objetivoAjustado - tot)}`;
+                                }
+                            }
+                        }
+                        if (hintEl) hintEl.textContent = 'Toca para ver Hoy';
+
+                    } else {
+                        tituloEl.innerHTML = `<svg class="icon"><use href="#icon-clock" /></svg> Hoy`;
+                        const regHoy = registros.find(r => r.fecha === hoy);
+                        let tiempoTranscurrido = 0;
+                        let objetivoDiario = horasDiarias;
+
+                        if (regHoy && regHoy.entrada) {
+                            const isFeriadoHoy = regHoy.entrada === '00:00' && regHoy.salida === '00:00';
+                            const isAusenciaHoy = regHoy.entrada === '11:11' && regHoy.salida === '11:11';
+                            const isVacacionesHoy = regHoy.entrada === '22:22' && regHoy.salida === '22:22';
+
+                            if (isFeriadoHoy) {
+                                if (statsEl) statsEl.innerHTML = `<div>🥳 Feriado</div>`;
+                                if (progressEl) {
+                                    progressEl.style.width = '100%';
+                                    setProgressBarColor(progressEl, 'purple');
+                                }
+                                if (mensajeEl) mensajeEl.textContent = `¡Día no laboral!`;
+
+                            } else if (isAusenciaHoy) {
+                                if (statsEl) statsEl.innerHTML = `<div>✈️ Ausencia</div>`;
+                                if (progressEl) {
+                                    progressEl.style.width = '100%';
+                                    setProgressBarColor(progressEl, 'purple');
+                                }
+                                if (mensajeEl) mensajeEl.textContent = `¡Día justificado!`;
+
+                            } else if (isVacacionesHoy) {
+                                if (statsEl) statsEl.innerHTML = `<div>🏖️ Vacaciones</div>`;
+                                if (progressEl) {
+                                    progressEl.style.width = '100%';
+                                    setProgressBarColor(progressEl, 'purple');
+                                }
+                                if (mensajeEl) mensajeEl.textContent = `¡Día de vacaciones!`;
+
+                            } else {
+                                if (regHoy.salida) {
+                                    tiempoTranscurrido = regHoy.total;
+                                } else {
+                                    const ahora = new Date();
+                                    const horaActual = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
+                                    const t = D.calcularHoras(regHoy.entrada, horaActual, regHoy.tiempoFuera || null);
+                                    tiempoTranscurrido = t ? t.total : 0;
+                                }
+
+                                const prog = objetivoDiario > 0 ? Math.min((tiempoTranscurrido / objetivoDiario) * 100, 100) : 100;
+
+                                if (statsEl) statsEl.innerHTML = `<div>${horasATexto(tiempoTranscurrido)}</div>`;
+                                if (progressEl) {
+                                    progressEl.style.width = prog + '%';
+                                    progressEl.style.backgroundColor = '';
+                                }
+
+                                if (regHoy.salida) {
+                                    // DÍA COMPLETADO
+                                    if (objetivoDiario === 0) {
+                                        // Sin objetivo: color neutral
+                                        setProgressBarColor(progressEl, 'blue');
+                                        if (mensajeEl) mensajeEl.textContent = `Total registrado: ${horasATexto(tiempoTranscurrido)}`;
+                                        mensajeEl.style.display = 'none'; // <--- NUEVO
+                                    } else {
+                                        if (mensajeEl) mensajeEl.style.display = 'block';
+                                        setProgressBarColor(progressEl, tiempoTranscurrido >= objetivoDiario ? 'green' : 'red');
+                                        const dif = tiempoTranscurrido - objetivoDiario;
+                                        if (mensajeEl) mensajeEl.textContent = dif >= 0 ? `${horasATexto(dif)} extras` : `Faltaron ${horasATexto(Math.abs(dif))}`;
+                                    }
+                                } else {
+                                    // DÍA EN CURSO
+                                    if (objetivoDiario === 0) {
+                                        // Sin objetivo: solo mostrar total
+                                        setProgressBarColor(progressEl, 'blue');
+                                        if (mensajeEl) mensajeEl.textContent = `Registrando tiempo...`;
+                                        mensajeEl.style.display = 'none';
+                                    } else {
+                                        if (mensajeEl) mensajeEl.style.display = 'block';
+                                        setProgressBarColor(progressEl, 'blue');
+                                        const faltante = Math.max(0, objetivoDiario - tiempoTranscurrido);
+
+                                        if (mensajeEl) {
+                                            if (tiempoTranscurrido >= objetivoDiario) {
+                                                // Ya cumplió el objetivo diario
+                                                const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
+                                                const extraHoy = tiempoTranscurrido - objetivoDiario;
+
+                                                // Solo mostrar déficit si aún debe tiempo después de las horas extras de hoy
+                                                if (bufferSemanal < 0 && Math.abs(bufferSemanal) > extraHoy) {
+                                                    mensajeEl.textContent = `Te podes ir, pero debés tiempo`;
+                                                } else {
+                                                    mensajeEl.textContent = `Te podes ir`;
+                                                }
+                                            } else {
+                                                // Aún no cumplió el objetivo diario
+                                                const faltanteTexto = `Faltan ${horasATexto(faltante)}`;
+                                                const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
+
+                                                // Si el buffer cubre lo que falta hoy
+                                                if (bufferSemanal >= faltante) {
+                                                    mensajeEl.textContent = `${faltanteTexto}, pero te podés ir`;
+                                                } else {
+                                                    // Buffer insuficiente, negativo o en 0
+                                                    mensajeEl.textContent = faltanteTexto;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            if (progressEl) {
+                                progressEl.style.width = '0%';
+                                setProgressBarColor(progressEl, 'blue');
+                            }
+                            if (statsEl) statsEl.innerHTML = `<div style="font-size: 1.8rem;">😴 Sin actividad</div>`;
+                            if (mensajeEl) {
+                                if (horasDiarias === 0) {
+                                    mensajeEl.style.display = 'none';
+                                } else {
+                                    mensajeEl.textContent = '...';
+                                    mensajeEl.style.display = 'block';
+                                }
+                            }
+                        }
+                        if (hintEl) hintEl.textContent = 'Toca para ver la Semana';
+                    }
+                    actualizarEstadisticas();
+                    actualizarEstadoBotonTimerMain();
+                }
+
+                function alternarTema() {
+                    let temaOscuro = !D.cargarConfiguracion().temaOscuro;
+                    document.body.classList.toggle('dark-mode');
+                    try { localStorage.setItem('temaOscuro', temaOscuro); } catch (e) { }
+                    const toggleBtnEl = $('theme-toggle');
+                    if (toggleBtnEl) {
+                        const tBtn = toggleBtnEl.querySelector('use');
+                        if (tBtn) tBtn.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
+                    }
+                    // Actualizar ambos botones (si existen)
+                    const toggleBtnModal = $('theme-toggle-modal');
+                    const toggleBtnText = $('theme-text');
+
+                    if (toggleBtnModal) {
+                        const icon = toggleBtnModal.querySelector('use');
+                        if (temaOscuro) {
+                            icon.setAttribute('href', '#icon-sun');
+                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Claro';
+                        } else {
+                            icon.setAttribute('href', '#icon-moon');
+                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Oscuro';
+                        }
+                    }
+                }
+
+                function alternarVista() {
+                    let vistaActual = D.vistaActual() === 'semana' ? 'diaria' : 'semana';
+                    D.setVistaActual(vistaActual);
+                    try {
+                        localStorage.setItem('vistaActual', vistaActual);
+                    } catch (e) { }
+                    actualizarUI();
+                }
+
+                function pegarHoraActual(id) {
+                    const c = $(id);
+                    if (!c) return;
+
+                    // Si el campo tiene contenido, limpiarlo
+                    if (c.value.trim() !== '') {
+                        c.value = '';
+                        return;
+                    }
+
+                    // Si está vacío, pegar hora actual
+                    const now = new Date();
+                    const h = String(now.getHours()).padStart(2, '0');
+                    const m = String(now.getMinutes()).padStart(2, '0');
+                    c.value = `${h}:${m}`;
+                }
+
+                function limpiarCampo(id) {
+                    const c = document.getElementById(id);
+                    if (c) c.value = '';
+                }
+
+                function formatearInput(e) {
+                    let v = e.target.value.replace(/[^0-9]/g, '');
+                    if (v.length >= 3) v = v.slice(0, 2) + ':' + v.slice(2, 4);
+                    e.target.value = v;
+                }
+
+                function actualizarFeedbackConfig() {
+                    const dias = parseFloat($('config-dias-habiles').value) || 5;
+                    const horas = parseFloat($('config-horas-diarias').value) || 0;
+                    const total = dias * horas;
+
+                    if (horas === 0) {
+                        $('config-total-feedback').textContent = `(Sin objetivo - Solo registro)`;
+                    } else {
+                        $('config-total-feedback').textContent = `(Total semanal: ${total}hs)`;
+                    }
+                }
+
+                function incrementarHorasDiarias() {
+                    let valorActual = parseFloat($('config-horas-diarias').value);
+                    if (isNaN(valorActual)) valorActual = D.horasDiarias();
+                    let nuevoValor = valorActual + 0.5;
+                    if (nuevoValor > 24) nuevoValor = 24;
+                    $('config-horas-diarias').value = nuevoValor;
+                    actualizarFeedbackConfig();
+                }
+
+                function decrementarHorasDiarias() {
+                    let valorActual = parseFloat($('config-horas-diarias').value);
+                    if (isNaN(valorActual)) valorActual = D.horasDiarias();
+                    let nuevoValor = valorActual - 0.5;
+                    if (nuevoValor < 0) nuevoValor = 0;
+                    $('config-horas-diarias').value = nuevoValor;
+                    actualizarFeedbackConfig();
+                }
+
+                function incrementarDiasHabiles() {
+                    let valorActual = parseFloat($('config-dias-habiles').value);
+                    if (isNaN(valorActual)) valorActual = D.diasHabiles();
+                    let nuevoValor = valorActual + 1;
+                    if (nuevoValor > 7) nuevoValor = 7;
+                    $('config-dias-habiles').value = nuevoValor;
+                    actualizarFeedbackConfig();
+                }
+
+                function decrementarDiasHabiles() {
+                    let valorActual = parseFloat($('config-dias-habiles').value);
+                    if (isNaN(valorActual)) valorActual = D.diasHabiles();
+                    let nuevoValor = valorActual - 1;
+                    if (nuevoValor < 1) nuevoValor = 1;
+                    $('config-dias-habiles').value = nuevoValor;
+                    actualizarFeedbackConfig();
+                }
+
+                function mostrarConfig() {
+                    $('config-dias-habiles').value = D.diasHabiles();
+                    $('config-horas-diarias').value = D.horasDiarias();
+                    actualizarFeedbackConfig();
+
+                    // Actualizar estado del botón de tema
+                    const temaOscuro = D.cargarConfiguracion().temaOscuro;
+                    const toggleBtnModal = $('theme-toggle-modal');
+                    const toggleBtnText = $('theme-text');
+
+                    if (toggleBtnModal) {
+                        const icon = toggleBtnModal.querySelector('use');
+                        if (temaOscuro) {
+                            icon.setAttribute('href', '#icon-sun');
+                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Claro';
+                        } else {
+                            icon.setAttribute('href', '#icon-moon');
+                            if (toggleBtnText) toggleBtnText.textContent = 'Modo Oscuro';
+                        }
+                    }
+
+                    $('modal-config').classList.add('show');
+                }
+
+                function cerrarConfig() {
+                    // 1. Cierra el modal principal de configuración
+                    $('modal-config').classList.remove('show');
+
+                    // 2. Cierra también el sub-modal de respaldo si existe y está abierto
+                    const modalRespaldo = $('modal-respaldo');
+                    if (modalRespaldo) {
+                        modalRespaldo.classList.remove('show');
+                    }
+                }
+
+                function mostrarPerfiles() {
+                    const perfilActual = window.PerfilManager.obtenerDatosPerfil();
+                    const perfilId = window.PerfilManager.obtenerPerfilActual();
+
+                    $('nombre-perfil-actual').value = perfilActual.nombre;
+                    $('perfil-actual-id').textContent = perfilId;
+
+                    const btnEliminar = $('btn-eliminar-perfil-modal');
+                    if (btnEliminar) {
+                        btnEliminar.disabled = (perfilId === 'default');
+                        btnEliminar.style.opacity = (perfilId === 'default') ? '0.5' : '1';
+                    }
+
+                    $('modal-perfiles').classList.add('show');
+                }
+
+                function cerrarPerfiles() {
+                    $('modal-perfiles').classList.remove('show');
+                }
+
+                function cerrarEdicion() {
+                    $('modal-editar').classList.remove('show');
+                    D.setEditandoId(null);
+                }
+
+                function mostrarImportar() {
+                    $('file-import').value = '';
+                    $('modal-importar').classList.add('show');
+                }
+
+                function cerrarImportar() {
+                    $('modal-importar').classList.remove('show');
+                }
+
+                function poblarSelectorMeses() {
+                    const selectMes = $('select-mes-stats');
+                    if (!selectMes) return;
+
+                    // Obtener todos los meses únicos de los registros
+                    const mesesUnicos = new Set();
+                    D.registros().forEach(r => {
+                        const mesAnio = r.fecha.substring(0, 7);
+                        mesesUnicos.add(mesAnio);
+                    });
+
+                    // Convertir a array y ordenar (más reciente primero)
+                    const mesesOrdenados = Array.from(mesesUnicos).sort().reverse();
+
+                    // Limpiar opciones previas
+                    selectMes.innerHTML = '';
+
+                    // Si no hay registros
+                    if (mesesOrdenados.length === 0) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'Sin registros';
+                        selectMes.appendChild(option);
+                        return;
+                    }
+
+                    // Agregar mes actual por defecto si tiene registros
+                    const hoy = new Date();
+                    const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+
+                    // Crear opciones
+                    mesesOrdenados.forEach(mesAnio => {
+                        const option = document.createElement('option');
+                        option.value = mesAnio;
+
+                        // Formatear texto del mes
+                        const [año, mes] = mesAnio.split('-');
+                        const fecha = new Date(año, mes - 1, 1);
+                        const nombreMes = fecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                        option.textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+
+                        // Seleccionar el mes actual por defecto
+                        if (mesAnio === mesActual) {
+                            option.selected = true;
+                        }
+
+                        selectMes.appendChild(option);
+                    });
+                }
+
+                function cambiarMesStats() {
+                    const selectMes = $('select-mes-stats');
+                    if (!selectMes) return;
+
+                    const mesSeleccionado = selectMes.value;
+                    actualizarEstadisticas(mesSeleccionado);
+                }
+
+                function generarReporte() {
+                    const selectMes = $('select-mes-stats');
+                    const mesSeleccionado = selectMes ? selectMes.value : null;
+
+                    if (!mesSeleccionado) {
+                        mostrarToast('No hay mes seleccionado', 'error');
+                        return;
+                    }
+
+                    const stats = calcularEstadisticasMes(mesSeleccionado);
+                    const nombreMes = selectMes.options[selectMes.selectedIndex].text;
+
+                    // Obtener registros del mes
+                    const [año, mes] = mesSeleccionado.split('-').map(Number);
+                    const registrosMes = D.registros().filter(r => {
+                        const [aReg, mReg] = r.fecha.split('-').map(Number);
+                        return aReg === año && mReg === mes;
+                    });
+
+                    // Calcular total de horas del mes
+                    const totalHoras = registrosMes
+                        .filter(r => r.entrada !== '00:00' && r.entrada !== '11:11' && r.entrada !== '22:22')
+                        .reduce((sum, r) => sum + r.total, 0);
+
+                    const horasTotales = Math.floor(totalHoras);
+                    const minutosTotales = Math.round((totalHoras - horasTotales) * 60);
+
+                    // ============================================
+                    // ESTRUCTURA MODULAR DEL REPORTE
+                    // ============================================
+
+                    const reporte = {
+                        // --- ENCABEZADO ---
+                        header: () => `
+================================================================
+REPORTE DE HORAS TRABAJADAS                   
+================================================================
+
+📅 Período: ${nombreMes}
+📊 Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}
+
+────────────────────────────────────────────────────────────────`,
+
+                        resumenGeneral: () => `
+
+📈 RESUMEN GENERAL
+────────────────────────────────────────────────────────────────
+
+   • Días trabajados:        ${stats.diasTrabajados}
+   • Feriados:               ${stats.feriados}
+   • Ausencias:              ${stats.ausencias}
+   • Vacaciones:             ${stats.vacaciones}
+   
+   • Entrada promedio:       ${stats.entradaPromedio}
+   • Salida promedio:        ${stats.salidaPromedio}
+   • Promedio diario:        ${stats.promedioDiario}
+   
+   • Total horas trabajadas: ${horasTotales}h ${minutosTotales}m (${totalHoras.toFixed(2)}h)`,
+
+                        // --- DETALLE DIARIO ---
+                        detalleDiario: () => {
+                            let seccion = `
+
+────────────────────────────────────────────────────────────────
+
+📋 DETALLE DIARIO
+────────────────────────────────────────────────────────────────
+
+`;
+
+                            // Ordenar registros por fecha ascendente
+                            const registrosOrdenados = [...registrosMes].sort((a, b) =>
+                                new Date(a.fecha) - new Date(b.fecha)
+                            );
+
+                            const horasDiariasObjetivo = D.horasDiarias();
+
+                            registrosOrdenados.forEach(r => {
+                                const dia = obtenerNombreDia(r.fecha);
+                                const fecha = r.fecha.split('-').reverse().join('/');
+
+                                const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
+                                const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+                                const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
+
+                                let linea = '';
+
+                                if (esFeriado) {
+                                    linea = `${dia.padEnd(10)} ${fecha}  FERIADO`;
+                                } else if (esAusencia) {
+                                    linea = `${dia.padEnd(10)} ${fecha}  AUSENCIA`;
+                                } else if (esVacaciones) {
+                                    linea = `${dia.padEnd(10)} ${fecha}  VACACIONES`;
+                                } else {
+                                    const entrada = r.entrada || '--:--';
+                                    const salida = r.salida || '--:--';
+                                    const total = r.salida ? `${r.horas}h ${r.minutos}m` : 'Incompleto';
+                                    const tiempoFuera = r.tiempoFuera ? ` (${r.tiempoFuera} fuera)` : '';
+
+                                    // Determinar si cumplió objetivo
+                                    let indicador = '  ';
+                                    if (r.salida) {
+                                        if (r.total >= horasDiariasObjetivo) {
+                                            indicador = '✓ ';
+                                        } else {
+                                            indicador = '✗ ';
+                                        }
+                                    }
+
+                                    linea = `${dia.padEnd(10)} ${fecha}  ${entrada} → ${salida}  [${total}]${tiempoFuera} ${indicador}`;
+                                }
+
+                                seccion += linea + '\n';
+                            });
+
+                            return seccion;
+                        },
+
+                        // --- TOTALES POR SEMANA ---
+                        totalesPorSemana: () => {
+                            // Función auxiliar para obtener el lunes de una fecha
+                            function obtenerLunesSemana(fecha) {
+                                const date = new Date(fecha.replace(/-/g, '/') + ' 00:00:00');
+                                const dia = date.getDay();
+                                const offset = dia === 0 ? -6 : 1 - dia;
+                                const lunes = new Date(date);
+                                lunes.setDate(date.getDate() + offset);
+                                return lunes.toISOString().split('T')[0];
+                            }
+
+                            // Agrupar TODOS los registros por semana
+                            const semanas = new Map();
+
+                            registrosMes.forEach(r => {
+                                const lunes = obtenerLunesSemana(r.fecha);
+                                if (!semanas.has(lunes)) {
+                                    semanas.set(lunes, {
+                                        trabajados: [],
+                                        feriados: [],
+                                        ausencias: [],
+                                        vacaciones: []
+                                    });
+                                }
+
+                                const semana = semanas.get(lunes);
+
+                                if (r.entrada === '00:00' && r.salida === '00:00') {
+                                    semana.feriados.push(r);
+                                } else if (r.entrada === '11:11' && r.salida === '11:11') {
+                                    semana.ausencias.push(r);
+                                } else if (r.entrada === '22:22' && r.salida === '22:22') {
+                                    semana.vacaciones.push(r);
+                                } else {
+                                    semana.trabajados.push(r);
+                                }
+                            });
+
+                            // Ordenar semanas por fecha
+                            const semanasOrdenadas = Array.from(semanas.entries()).sort((a, b) =>
+                                new Date(a[0]) - new Date(b[0])
+                            );
+
+                            if (semanasOrdenadas.length === 0) {
+                                return '';
+                            }
+
+                            let seccion = `
+
+────────────────────────────────────────────────────────────────
+
+📅 TOTALES POR SEMANA
+────────────────────────────────────────────────────────────────
+
+`;
+
+                            semanasOrdenadas.forEach(([lunes, datos], index) => {
+                                const totalSemanal = datos.trabajados.reduce((sum, r) => sum + r.total, 0);
+                                const horasSem = Math.floor(totalSemanal);
+                                const minutosSem = Math.round((totalSemanal - horasSem) * 60);
+
+                                // Calcular viernes de la semana
+                                const fechaLunes = new Date(lunes.replace(/-/g, '/') + ' 00:00:00');
+                                const fechaViernes = new Date(fechaLunes);
+                                fechaViernes.setDate(fechaLunes.getDate() + 4);
+                                const viernes = fechaViernes.toISOString().split('T')[0];
+
+                                const lunesFormato = lunes.split('-').reverse().join('/');
+                                const viernesFormato = viernes.split('-').reverse().join('/');
+
+                                seccion += `   Semana ${index + 1} (${lunesFormato} - ${viernesFormato}):\n`;
+                                seccion += `      └─ ${horasSem}h ${minutosSem}m (${totalSemanal.toFixed(2)}h)`;
+
+                                // Agregar información de feriados, ausencias y vacaciones
+                                const notasExtras = [];
+                                if (datos.feriados.length > 0) {
+                                    notasExtras.push(`${datos.feriados.length} feriado${datos.feriados.length > 1 ? 's' : ''}`);
+                                }
+                                if (datos.ausencias.length > 0) {
+                                    notasExtras.push(`${datos.ausencias.length} ausencia${datos.ausencias.length > 1 ? 's' : ''}`);
+                                }
+                                if (datos.vacaciones.length > 0) {
+                                    notasExtras.push(`${datos.vacaciones.length} vacación${datos.vacaciones.length > 1 ? 'es' : ''}`);
+                                }
+
+                                if (notasExtras.length > 0) {
+                                    seccion += ` [${notasExtras.join(', ')}]`;
+                                }
+
+                                seccion += '\n\n';
+                            });
+
+                            return seccion;
+                        },
+
+                        // --- CONFIGURACIÓN ---
+                        configuracion: () => `
+
+────────────────────────────────────────────────────────────────
+
+⚙️ CONFIGURACIÓN
+────────────────────────────────────────────────────────────────
+
+   • Horas diarias:          ${D.horasDiarias()}
+   • Días hábiles/semana:    ${D.diasHabiles()}
+   • Horas semanales:        ${D.horasSemanales()}`,
+
+                        // --- FOOTER ---
+                        footer: () => `
+
+────────────────────────────────────────────────────────────────
+
+Generado por Sistema de Horarios
+`
+                    };
+
+                    // ============================================
+                    // GENERAR CONTENIDO COMPLETO
+                    // ============================================
+                    const contenido =
+                        reporte.header() +
+                        reporte.resumenGeneral() +
+                        reporte.detalleDiario() +
+                        reporte.totalesPorSemana() +
+                        reporte.configuracion() +
+                        reporte.footer();
+
+                    // ============================================
+                    // DESCARGAR ARCHIVO
+                    // ============================================
+                    try {
+                        const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `reporte_${mesSeleccionado}.txt`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        mostrarToast('✅ Reporte generado', 'success');
+                    } catch (e) {
+                        console.error('Error generando reporte:', e);
+                        mostrarToast('Error al generar reporte', 'error');
+                    }
+                }
+
+                // Función auxiliar para sumar minutos a un formato HH:MM
+                function sumarMinutosAHora(horaString, minutosASumar) {
+                    let totalMinutos = minutosASumar;
+
+                    // Si ya existe un valor en el input (ej: 00:20), lo sumamos
+                    if (horaString && horaString.includes(':')) {
+                        const [h, m] = horaString.split(':').map(Number);
+                        if (!isNaN(h) && !isNaN(m)) {
+                            totalMinutos += (h * 60) + m;
+                        }
+                    }
+
+                    const horas = Math.floor(totalMinutos / 60);
+                    const mins = Math.round(totalMinutos % 60);
+
+                    // Formatear a HH:MM
+                    return `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                }
+
+                function actualizarEstadoBotonTimerMain() {
+                    const btn = document.getElementById('btn-timer-main');
+                    const card = document.getElementById('stats-card'); // <--- 1. REFERENCIA A LA TARJETA
+                    if (!btn) return;
+
+                    const hoy = obtenerFechaHoy();
+                    const registroHoy = D.registros().find(r => r.fecha === hoy);
+
+                    // 🔧 CLAVE ESPECÍFICA POR PERFIL
+                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                    const storageKey = `breakStartTime_${perfilId}`;
+                    const isRunning = localStorage.getItem(storageKey) !== null;
+                    const icon = btn.querySelector('use');
+
+                    // ... (lógica de bloqueo del botón existente) ...
+                    const diaCerrado = registroHoy && registroHoy.salida && registroHoy.salida.trim() !== '';
+
+                    if (!isRunning && (!registroHoy || diaCerrado)) {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                        btn.style.cursor = 'not-allowed';
+                        btn.title = diaCerrado ? "Día finalizado" : "Debes registrar entrada primero";
+                    } else {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                        btn.title = isRunning ? "Detener descanso" : "Iniciar descanso";
+                    }
+
+                    if (isRunning) {
+                        // Estado ACTIVO
+                        btn.classList.add('running');
+                        btn.style.color = 'var(--c-red)';
+                        btn.style.borderColor = 'var(--c-red)';
+                        icon.setAttribute('href', '#icon-coffee');
+
+                        // <--- 2. ACTIVAR EFECTO EN TARJETA
+                        if (card) {
+                            card.classList.add('timer-running');
+                            // Opcional: Cambiar título temporalmente
+                            const titulo = card.querySelector('h2');
+                            if (titulo) titulo.innerHTML = `<svg class="icon"><use href="#icon-coffee"/></svg> Tiempo fuera...`;
+                        }
+
+                    } else {
+                        // Estado INACTIVO
+                        btn.classList.remove('running');
+                        btn.style.color = 'var(--text-main)';
+                        btn.style.borderColor = 'var(--border)';
+                        icon.setAttribute('href', '#icon-coffee');
+
+                        // <--- 3. DESACTIVAR EFECTO EN TARJETA
+                        if (card) card.classList.remove('timer-running');
+                    }
+                }
+
+                async function toggleTimerBreakMain() {
+                    // 🔧 CLAVE ESPECÍFICA POR PERFIL
+                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                    const storageKey = `breakStartTime_${perfilId}`;
+                    const storedStart = localStorage.getItem(storageKey);
+                    const hoy = obtenerFechaHoy();
+                    const registroHoy = D.registros().find(r => r.fecha === hoy);
+
+                    // Doble verificación de seguridad
+                    if (!storedStart && !registroHoy) {
+                        mostrarToast('Debes crear un registro para hoy primero', 'warning');
+                        return;
+                    }
+
+                    if (!storedStart) {
+                        // --- INICIAR ---
+                        localStorage.setItem(storageKey, Date.now());
+                        mostrarToast('⏱️ Tiempo fuera iniciado', 'info');
+                    } else {
+                        // --- DETENER ---
+                        const start = parseInt(storedStart);
+                        const end = Date.now();
+                        const diffMs = end - start;
+
+                        let minutosTranscurridos = Math.round(diffMs / 60000);
+                        if (minutosTranscurridos < 1) minutosTranscurridos = 1;
+
+                        // Calcular nuevo tiempo
+                        const tiempoActual = registroHoy.tiempoFuera || '00:00';
+                        const nuevoTiempoFuera = sumarMinutosAHora(tiempoActual, minutosTranscurridos);
+
+                        // Actualizar el registro en memoria
+                        registroHoy.tiempoFuera = nuevoTiempoFuera;
+
+                        // Recalcular totales del registro (horas netas)
+                        const t = D.calcularHoras(registroHoy.entrada, registroHoy.salida, nuevoTiempoFuera);
+                        registroHoy.horas = t?.horas || 0;
+                        registroHoy.minutos = t?.minutos || 0;
+                        registroHoy.total = t?.total || 0;
+                        HistoryManager.saveState(D.registros());
+
+                        // Guardar en base de datos
+                        localStorage.removeItem(storageKey);
+                        await D.guardarYActualizar(true, registroHoy.id); // Guardamos y refrescamos UI
+
+                        mostrarToast(`✅ Se descontaron ${minutosTranscurridos} min al registro de hoy`, 'success');
+                    }
+
+                    actualizarEstadoBotonTimerMain();
+                }
+
+                // --- Lógica de Bloqueo del Modal Editar ---
+                let edicionBloqueada = true;
+
+                function setBloqueoEdicion(bloqueado) {
+                    edicionBloqueada = bloqueado;
+
+                    const btnLock = $('btn-lock-toggle');
+                    if (btnLock) {
+                        const icon = btnLock.querySelector('use');
+                        icon.setAttribute('href', bloqueado ? '#icon-lock' : '#icon-lock-open');
+                        btnLock.title = bloqueado ? "Desbloquear edición" : "Bloquear edición";
+                        btnLock.style.color = bloqueado ? 'var(--c-red)' : 'var(--text-main)';
+                    }
+
+                    const inputs = ['edit-fecha', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'];
+                    inputs.forEach(id => {
+                        const el = $(id);
+                        if (el) el.disabled = bloqueado;
+                    });
+
+                    const modal = $('modal-editar');
+                    if (modal) {
+                        const botones = modal.querySelectorAll('button:not(#btn-lock-toggle):not(.btn-cancel)');
+                        botones.forEach(btn => {
+                            btn.disabled = bloqueado;
+                        });
+                    }
+                }
+
+                function toggleBloqueoEdicion() {
+                    setBloqueoEdicion(!edicionBloqueada);
+                }
+
+                function mostrarVacaciones() {
+                    $('vacaciones-fecha-desde').value = '';
+                    $('vacaciones-fecha-hasta').value = '';
+                    $('vacaciones-tipo').value = 'vacaciones';
+                    $('modal-vacaciones').classList.add('show');
+                    actualizarBotonesVacaciones();
+                }
+
+                function cerrarVacaciones() {
+                    $('modal-vacaciones').classList.remove('show');
+                }
+
+                function actualizarBotonesVacaciones() {
+                    const tipo = $('vacaciones-tipo').value;
+                    const btnRegistrar = document.querySelector('#modal-vacaciones .btn-backup');
+
+                    if (tipo === 'normal') {
+                        btnRegistrar.disabled = true;
+                        btnRegistrar.style.opacity = '0.5';
+                        btnRegistrar.title = 'No se pueden registrar rangos de tipo Normal';
+                    } else {
+                        btnRegistrar.disabled = false;
+                        btnRegistrar.style.opacity = '1';
+                        btnRegistrar.title = '';
+                    }
+                }
+
+                function mostrarRespaldo() {
+                    // Cerramos config momentáneamente para efecto de navegación
+                    $('modal-config').classList.remove('show');
+                    $('modal-respaldo').classList.add('show');
+                }
+
+                function cerrarRespaldo() {
+                    // Al cerrar respaldo, volvemos a mostrar Configuración
+                    $('modal-respaldo').classList.remove('show');
+                    $('modal-config').classList.add('show');
+                }
+
+                function renderizarListaPerfiles() {
+                    const lista = document.getElementById('lista-perfiles-botones');
+                    if (!lista) return;
+
+                    lista.innerHTML = '';
+                    const perfiles = window.PerfilManager.obtenerListaPerfiles();
+
+                    perfiles.forEach(p => {
+                        const container = document.createElement('div');
+                        container.className = `btn-perfil-select ${p.esActual ? 'activo' : ''}`;
+
+                        const infoSection = document.createElement('div');
+                        infoSection.className = 'btn-perfil-info';
+
+                        const nombreSpan = document.createElement('div');
+                        nombreSpan.className = 'btn-perfil-nombre';
+                        nombreSpan.textContent = p.nombre;
+
+                        infoSection.appendChild(nombreSpan);
+
+                        if (p.esActual) {
+                            const badge = document.createElement('div');
+                            badge.className = 'btn-perfil-badge';
+                            badge.textContent = '✓ Activo';
+                            infoSection.appendChild(badge);
+                        }
+
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn-perfil-edit';
+                        editBtn.innerHTML = '<svg class="icon"><use href="#icon-edit"/></svg>';
+                        editBtn.title = 'Editar perfil';
+                        editBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            UILogic.abrirEditorPerfil(p.id);
+                        };
+
+                        container.onclick = () => {
+                            if (!p.esActual) {
+                                window.PerfilManager.cambiarPerfil(p.id);
+                            }
+                        };
+
+                        if (p.esActual) {
+                            container.style.cursor = 'default';
+                        }
+
+                        container.appendChild(infoSection);
+                        container.appendChild(editBtn);
+                        lista.appendChild(container);
+                    });
+                }
+
+                function abrirSelectorPerfiles() {
+                    const inputNuevo = document.getElementById('nombre-nuevo-perfil-selector');
+                    if (inputNuevo) inputNuevo.value = '';
+
+                    renderizarListaPerfiles();
+                    document.getElementById('modal-selector-perfiles').classList.add('show');
+                }
+
+                function crearPerfilDesdeSelector() {
+                    const input = document.getElementById('nombre-nuevo-perfil-selector');
+                    if (!input) return;
+
+                    const nombre = S.sanitizeString(input.value.trim(), 30);
+
+                    if (!nombre) {
+                        mostrarToast('Ingresa un nombre para el perfil', 'error');
+                        return;
+                    }
+
+                    const perfiles = JSON.parse(localStorage.getItem('perfiles') || '{}');
+
+                    if (Object.keys(perfiles).length >= 5) {
+                        mostrarToast('Máximo de perfiles alcanzado (5)', 'error');
+                        return;
+                    }
+
+                    const id = 'perfil_' + Date.now();
+                    perfiles[id] = {
+                        nombre: nombre,
+                        registros: [],
+                        diasHabiles: 5,
+                        horasDiarias: 7
+                    };
+
+                    localStorage.setItem('perfiles', JSON.stringify(perfiles));
+
+                    // ⭐ FORZAR ACTUALIZACIÓN DEL PERFILMANAGER
+                    if (window.PerfilManager) {
+                        // Recargar los perfiles internamente
+                        window.PerfilManager.inicializar();
+                    }
+
+                    mostrarToast(`Perfil "${nombre}" creado`, 'success');
+
+                    input.value = '';
+
+                    // ⭐ RENDERIZAR LISTA ACTUALIZADA
+                    renderizarListaPerfiles();
+
+                    // Resaltar nuevo perfil
+                    requestAnimationFrame(() => {
+                        const lista = document.getElementById('lista-perfiles-botones');
+                        const nuevoPerfilElement = lista?.lastElementChild;
+                        if (nuevoPerfilElement) {
+                            nuevoPerfilElement.style.animation = 'zoomIn 0.3s ease-out';
+                            nuevoPerfilElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    });
+                }
+
+                function cerrarSelectorPerfiles() {
+                    document.getElementById('modal-selector-perfiles').classList.remove('show');
+                }
+
+                function mostrarAdministracionPerfiles() {
+                    cerrarSelectorPerfiles();
+                    mostrarPerfiles(); // Llama a la función existente que abre modal-perfiles
+                }
+
+                let perfilEnEdicion = null;
+
+                function abrirEditorPerfil(perfilId) {
+                    perfilEnEdicion = perfilId;
+                    const perfiles = JSON.parse(localStorage.getItem('perfiles') || '{}');
+                    const perfil = perfiles[perfilId];
+
+                    if (!perfil) {
+                        mostrarToast('Perfil no encontrado', 'error');
+                        return;
+                    }
+
+                    document.getElementById('nombre-perfil-editar').value = perfil.nombre;
+                    document.getElementById('id-perfil-editar').value = perfilId;
+
+                    // Deshabilitar botón eliminar si es el perfil default
+                    const btnEliminar = document.getElementById('btn-eliminar-perfil-editor');
+                    if (btnEliminar) {
+                        btnEliminar.disabled = (perfilId === 'default');
+                        btnEliminar.style.opacity = (perfilId === 'default') ? '0.5' : '1';
+                    }
+
+                    // Cerrar selector y abrir editor
+                    document.getElementById('modal-selector-perfiles').classList.remove('show');
+                    document.getElementById('modal-editar-perfil').classList.add('show');
+                }
+
+                function cerrarEditorPerfil() {
+                    perfilEnEdicion = null;
+                    document.getElementById('modal-editar-perfil').classList.remove('show');
+                    // Reabrir selector
+                    abrirSelectorPerfiles();
+                }
+
+                function guardarEdicionPerfil() {
+                    if (!perfilEnEdicion) return;
+
+                    const nuevoNombre = S.sanitizeString(document.getElementById('nombre-perfil-editar').value.trim(), 30);
+
+                    if (!nuevoNombre) {
+                        mostrarToast('Ingresa un nombre válido', 'error');
+                        return;
+                    }
+
+                    const perfiles = JSON.parse(localStorage.getItem('perfiles') || '{}');
+
+                    if (!perfiles[perfilEnEdicion]) {
+                        mostrarToast('Perfil no encontrado', 'error');
+                        return;
+                    }
+
+                    // Detectar cambios
+                    if (perfiles[perfilEnEdicion].nombre === nuevoNombre) {
+                        mostrarToast('Sin cambios', 'info');
+                        cerrarEditorPerfil();
+                        return;
+                    }
+
+                    perfiles[perfilEnEdicion].nombre = nuevoNombre;
+                    localStorage.setItem('perfiles', JSON.stringify(perfiles));
+
+                    const perfilActual = window.PerfilManager.obtenerPerfilActual();
+                    if (perfilEnEdicion === perfilActual) {
+                        const btnTexto = document.getElementById('nombre-perfil-header');
+                        if (btnTexto) btnTexto.textContent = nuevoNombre;
+                    }
+
+                    if (window.PerfilManager) {
+                        window.PerfilManager.inicializar();
+                    }
+                    // --------------------------------------------------------
+
+                    mostrarToast('Perfil actualizado', 'success');
+                    cerrarEditorPerfil();
+                }
+
+                async function eliminarPerfilDesdeEditor() {
+                    if (!perfilEnEdicion || perfilEnEdicion === 'default') {
+                        mostrarToast('No se puede eliminar el perfil Principal', 'error');
+                        return;
+                    }
+
+                    const perfiles = JSON.parse(localStorage.getItem('perfiles') || '{}');
+                    const perfil = perfiles[perfilEnEdicion];
+
+                    if (!perfil) {
+                        mostrarToast('Perfil no encontrado', 'error');
+                        return;
+                    }
+
+                    const confirmacion = window.confirm(`¿Estás seguro de que quieres eliminar el perfil "${perfil.nombre}"?\n\nEsta acción NO se puede deshacer.`);
+
+                    if (!confirmacion) return;
+
+                    // Preguntar por Backup
+                    const deseaBackup = window.confirm(`Antes de eliminar "${perfil.nombre}":\n\n¿Deseas descargar una copia de seguridad de estos datos?`);
+
+                    if (deseaBackup) {
+                        // Exportar datos del perfil antes de eliminar
+                        const perfilActualTemp = window.PerfilManager.obtenerPerfilActual();
+
+                        // Si no es el perfil actual, cambiar temporalmente para exportar
+                        if (perfilEnEdicion !== perfilActualTemp) {
+                            // Guardar datos del perfil a eliminar
+                            const datosExportar = {
+                                registros: perfil.registros,
+                                diasHabiles: perfil.diasHabiles,
+                                horasDiarias: perfil.horasDiarias,
+                                fecha: new Date().toISOString(),
+                                version: 3
+                            };
+
+                            const blob = new Blob([JSON.stringify(datosExportar, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `backup_${perfil.nombre}_${new Date().toISOString().split('T')[0]}.json`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        } else {
+                            // Si es el perfil actual, usar la función normal
+                            D.exportarJSON();
+                        }
+
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+
+                    // Eliminar el perfil
+                    delete perfiles[perfilEnEdicion];
+                    localStorage.setItem('perfiles', JSON.stringify(perfiles));
+
+                    // Si era el perfil actual, cambiar a default
+                    const perfilActual = window.PerfilManager.obtenerPerfilActual();
+                    if (perfilEnEdicion === perfilActual) {
+                        localStorage.setItem('perfilActivo', 'default');
+                        mostrarToast('Perfil eliminado. Recargando...', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        // --- Actualizar memoria del PerfilManager ---
+                        if (window.PerfilManager) {
+                            window.PerfilManager.inicializar();
+                        }
+                        // --------------------------------------------------------
+
+                        mostrarToast('Perfil eliminado', 'success');
+                        cerrarEditorPerfil();
+                    }
+                }
+
+                async function init() {
+                    if (typeof (Storage) === "undefined") {
+                        alert("Tu navegador no soporta localStorage.");
+                        return;
+                    }
+
+                    // 1. INICIALIZAR SISTEMAS Y EXPONER VARIABLES GLOBALES PRIMERO
+                    // Esto asegura que los botones funcionen aunque falle la interfaz gráfica después
+                    PerfilManager.inicializar();
+
+                    window.DataManagement = {
+                        agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
+                        mostrarImportar: mostrarImportar, importarDatos: D.importarDatos, borrarTodoHistorial: D.borrarTodoHistorial,
+                        guardarEdicion: D.guardarEdicion, eliminarRegistroActual: D.eliminarRegistroActual, cargarMasRegistros: D.cargarMasRegistros,
+                        undoAction: D.undoAction, redoAction: D.redoAction, aplicarFiltros: D.aplicarFiltros,
+                        limpiarFiltros: D.limpiarFiltros, registrarVacaciones: D.registrarVacaciones, borrarPeriodo: D.borrarPeriodo,
+                        registros: D.registros, diasHabiles: D.diasHabiles, horasDiarias: D.horasDiarias,
+                        setDiasHabiles: D.setDiasHabiles, setHorasDiarias: D.setHorasDiarias, setRegistrosVisibles: D.setRegistrosVisibles
+                    };
+                    window.HistoryManager = { undo: D.undoAction, redo: D.redoAction };
+                    window.PWAInstaller = { instalarApp: PWAInstaller.instalarApp };
+                    window.PerfilManager = PerfilManager; // <--- AHORA ESTÁ AQUÍ ARRIBA
+
+                    window.UILogic = {
+                        alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
+                        cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
+                        mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
+                        incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
+                        incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
+                        cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
+                        cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
+                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones,
+                        actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles,
+                        cerrarRespaldo, mostrarRespaldo, abrirSelectorPerfiles, cerrarSelectorPerfiles, mostrarAdministracionPerfiles,
+                        init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
+                        crearPerfilDesdeSelector, renderizarListaPerfiles
+                    };
+
+                    // 2. CARGAR CONFIGURACIÓN
+                    const config = D.cargarConfiguracion();
+                    const temaOscuro = config.temaOscuro;
+                    D.setVistaActual(config.vistaActual);
+
+                    const perfilActual = PerfilManager.obtenerDatosPerfil();
+                    D.setDiasHabiles(perfilActual.diasHabiles !== undefined ? perfilActual.diasHabiles : 5);
+                    D.setHorasDiarias(perfilActual.horasDiarias !== undefined ? perfilActual.horasDiarias : 7);
+
+                    const registrosCargados = perfilActual.registros || [];
+                    D.registros().splice(0, D.registros().length, ...registrosCargados);
+
+                    HistoryManager.saveState(D.registros());
+                    HistoryManager.updateButtons();
+
+                    // 3. INTERFAZ GRÁFICA (TEMA) - Versión Segura
+                    if (temaOscuro) {
+                        document.body.classList.add('dark-mode');
+                    }
+                    // Intentar actualizar botones de tema si existen
+                    const toggleBtnEl = $('theme-toggle');
+                    if (toggleBtnEl) {
+                        const tBtn = toggleBtnEl.querySelector('use');
+                        if (tBtn) tBtn.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
+                    }
+                    const toggleBtnModal = $('theme-toggle-modal');
+                    if (toggleBtnModal) {
+                        const tBtnM = toggleBtnModal.querySelector('use');
+                        const tTxt = $('theme-text');
+                        if (tBtnM) tBtnM.setAttribute('href', temaOscuro ? '#icon-sun' : '#icon-moon');
+                        if (tTxt) tTxt.textContent = temaOscuro ? 'Modo Claro' : 'Modo Oscuro';
+                    }
+
+                    $('fecha').value = obtenerFechaHoy();
+
+                    // 4. LISTENERS E INTERACTIVIDAD
+                    ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'].forEach(id => {
+                        const el = $(id);
+                        if (el) el.addEventListener('input', formatearInput);
+                    });
+
+                    // 5. RESTAURAR ESTADO VISUAL (Con protección try-catch para evitar crash si moviste cosas)
+                    try {
+                        if (localStorage.getItem('formularioExpandido') === 'true') toggleFormulario();
+                        if (localStorage.getItem('statsExpandido') === 'true') toggleStats();
+                        if (localStorage.getItem('botonesHistoricoExpandido') === 'true') toggleBotonesHistorico();
+                    } catch (e) { console.warn('Error restaurando estado visual:', e); }
+
+                    // Inicializar PWA
+                    PWAInstaller.init();
+
+                    // Primera actualización de UI
+                    actualizarUI();
+                    setInterval(() => actualizarUI(null, true), 60000);
+                    console.log('Sistema iniciado correctamente v6.29');
+                }
+
+                function mostrarFiltros() {
+                    // Si hay filtro activo, limpiarlo directamente
+                    if (D.obtenerRegistrosFiltrados().length !== D.registros().length) {
+                        D.limpiarFiltros();
+                        return;
+                    }
+
+                    // Si no hay filtro, mostrar modal
+                    $('modal-filtros').classList.add('show');
+                }
+
+                function cerrarFiltros() {
+                    $('modal-filtros').classList.remove('show');
+                }
+
+                function mostrarAyuda() {
+                    $('modal-ayuda').classList.add('show');
+                }
+
+                function cerrarAyuda() {
+                    $('modal-ayuda').classList.remove('show');
+                }
+
+                // --- FUNCIÓN GENÉRICA PARA COLAPSABLES ---
+                function toggleSeccionGen(elementId, iconId, storageKey, callback = null) {
+                    const el = $(elementId);
+                    const icon = $(iconId);
+
+                    if (!el) return;
+
+                    el.classList.toggle('expanded');
+                    const isExpanded = el.classList.contains('expanded');
+
+                    if (icon) {
+                        if (isExpanded) icon.classList.add('rotated');
+                        else icon.classList.remove('rotated');
+                    }
+
+                    try { localStorage.setItem(storageKey, isExpanded); } catch (e) { }
+
+                    // Ejecutar lógica extra si es necesario (ej: cargar stats)
+                    if (isExpanded && callback) callback();
+                }
+
+                // Reemplazos simples
+                function toggleFormulario() {
+                    toggleSeccionGen('form-registro', 'icon-indicator-form', 'formularioExpandido');
+                }
+
+                function toggleBotonesHistorico() {
+                    toggleSeccionGen('botones-historico', 'icon-indicator-historico', 'botonesHistoricoExpandido');
+                }
+
+                function toggleStats() {
+                    toggleSeccionGen('form-stats', 'icon-indicator-stats', 'statsExpandido', () => {
+                        // Lógica específica de stats al abrir
+                        poblarSelectorMeses();
+                        const selectMes = $('select-mes-stats');
+                        if (selectMes && selectMes.value) {
+                            actualizarEstadisticas(selectMes.value);
+                        } else {
+                            actualizarEstadisticas();
+                        }
+                    });
+                }
+
+                return {
+                    init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
+                    cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast, mostrarError,
+                    limpiarError, resetearBoton, restaurarBotonGuardarEdicion, mostrarVacaciones, toggleFormulario,
+                    cerrarVacaciones, incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo, actualizarBotonesVacaciones,
+                    incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
+                    cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
+                    toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
+                    actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles, abrirSelectorPerfiles,
+                    cerrarSelectorPerfiles, mostrarAdministracionPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil,
+                    eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles
+                };
+
+            })(SecurityAndUtils, DataManagement);
+
+            UILogic.init();
+        })();
+    </script>
+    <script>
+        // Registro del Service Worker para PWA con validación de integridad
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async function () {
+                try {
+                    // 1. Verificar que el archivo existe y es válido
+                    const response = await fetch('./sw.js');
+
+                    if (!response.ok) {
+                        console.error('Service Worker no encontrado o inaccesible');
+                        return;
+                    }
+
+                    // 2. Leer el contenido
+                    const swContent = await response.text();
+
+                    // 3. Validaciones básicas de seguridad
+                    const validaciones = {
+                        tieneVersionCorrecta: swContent.includes('v6.00') || swContent.includes('horarios-v6'),
+                        noTieneEval: !swContent.includes('eval('),
+                        noTieneFunction: !swContent.includes('new Function('),
+                        tamanoRazonable: swContent.length > 100 && swContent.length < 50000,
+                        esJavaScript: response.headers.get('content-type')?.includes('javascript') ||
+                            response.headers.get('content-type')?.includes('text/plain')
+                    };
+
+                    // 4. Verificar que todas las validaciones pasen
+                    const todasValidas = Object.values(validaciones).every(v => v === true);
+
+                    if (!todasValidas) {
+                        console.error('❌ Service Worker falló validaciones de seguridad:', validaciones);
+
+                        // Mostrar advertencia al usuario
+                        if (window.UILogic) {
+                            UILogic.mostrarToast('⚠️ Service Worker no pasó validaciones de seguridad', 'warning');
+                        }
+                        return;
+                    }
+
+                    // 5. Calcular hash del Service Worker para monitoreo
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(swContent);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                    console.log('✅ Service Worker validado. Hash SHA-256:', hash.substring(0, 16) + '...');
+
+                    // 6. Guardar el hash para verificaciones futuras (opcional)
+                    const hashGuardado = localStorage.getItem('sw-hash');
+                    if (hashGuardado && hashGuardado !== hash) {
+                        console.warn('⚠️ El Service Worker ha cambiado desde la última vez');
+
+                        if (window.UILogic) {
+                            UILogic.mostrarToast('Actualizado', 'info');
+                        }
+                    }
+                    localStorage.setItem('sw-hash', hash);
+
+                    // 7. Registrar el Service Worker
+                    const registration = await navigator.serviceWorker.register('./sw.js');
+                    console.log('✅ ServiceWorker registrado con éxito:', registration.scope);
+
+                    // 8. Escuchar actualizaciones
+                    registration.addEventListener('updatefound', () => {
+                        console.log('🔄 Nueva versión del Service Worker detectada');
+                        if (window.UILogic) {
+                            UILogic.mostrarToast('Actualización disponible. Recarga la página.', 'info');
+                        }
+                    });
+
+                } catch (err) {
+                    console.error('❌ Error en validación/registro de ServiceWorker:', err);
+                }
             });
-            return networkResponse;
-          })
-          .catch(() => {
-            if (event.request.mode === 'navigate') {
-              return caches.match('./index.html');
-            }
-          });
-      })
-  );
-});
+        }
+    </script>
+</body>
+
+</html>
+
+<!--// ====================================================================
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.37
+    // ====================================================================
+    1) agregado nuevo selector de perfiles
+    2) varias modificaciones del selector de perfil
+
+
+    
+    -->
