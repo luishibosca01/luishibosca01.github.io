@@ -52,7 +52,7 @@
             /* --- Variables de Color (Tema Oscuro) --- */
             --bg-body: #111827;
             --bg-card: #1f2937;
-            --bg-header: #1f2937;
+            --bg-header: #111827;
             --text-main: #f9fafb;
             --text-muted: #d1d5db;
             --border: #374151;
@@ -90,7 +90,7 @@
 
         .header {
             background: var(--bg-header);
-            padding: 0.3rem;
+            padding: 0.6rem;
             box-shadow: var(--shadow);
             position: sticky;
             top: 0;
@@ -106,11 +106,8 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            /* AGREGADO: */
             flex-shrink: 0;
-            /* Impide que el título se achique o se corra */
             margin-right: auto;
-            /* Empuja el resto de elementos a la derecha */
         }
 
         .card,
@@ -397,7 +394,18 @@
         /* --- Stats & Progreso --- */
         .stats-card {
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: transform 0.15s ease-out, opacity 0.15s ease-out, box-shadow 0.3s !important;
+        }
+
+        .stats-card:active {
+            transform: scale(0.96) !important;
+            /* Se achica un poquito */
+        }
+
+        .stats-card.cambiando-vista {
+            transform: scale(0.98);
+            opacity: 0.6;
+            /* Se desvanece ligeramente mientras cambia */
         }
 
         /* --- Efecto Timer en Tarjeta Principal --- */
@@ -851,18 +859,6 @@
             text-decoration: none;
         }
 
-        .header {
-            background: var(--bg-header);
-            padding: 0.3rem;
-            box-shadow: var(--shadow);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
         /* Estilos para meses colapsables */
         .registro-mes-container {
             margin: 0;
@@ -908,7 +904,7 @@
 
         /* Botón de perfil en el Header */
         .header-profile-btn {
-            background: var(--input-bg);
+            background: transparent;
             border: 2px solid var(--border);
             border-radius: 20px;
             padding: 0.25rem 0.75rem;
@@ -989,7 +985,6 @@
         }
 
         .btn-perfil-select:hover {
-            border-color: var(--c-blue);
             transform: scale(1.02);
         }
 
@@ -1040,8 +1035,6 @@
         }
 
         .btn-perfil-edit:hover {
-            border-color: var(--c-blue);
-            color: var(--c-blue);
             background: var(--bg-body);
             transform: scale(1.03);
         }
@@ -1399,7 +1392,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.45</span>
+                <span class="version-text">v6.46</span>
             </h3>
 
             <div class="form-group">
@@ -1418,10 +1411,12 @@
                     <input type="number" id="config-horas-diarias" min="0" max="24" step="0.5" readonly />
                     <button class="btn-increment" onmousedown="UILogic.iniciarCambioHoras(0.5)"
                         onmouseup="UILogic.detenerCambio()" onmouseleave="UILogic.detenerCambio()"
-                        ontouchstart="UILogic.iniciarCambioHoras(0.5)" ontouchend="UILogic.detenerCambio()">+</button>
+                        ontouchstart="event.preventDefault(); UILogic.iniciarCambioHoras(0.5)"
+                        ontouchend="event.preventDefault(); UILogic.detenerCambio()">+</button>
                     <button class="btn-increment" onmousedown="UILogic.iniciarCambioHoras(-0.5)"
                         onmouseup="UILogic.detenerCambio()" onmouseleave="UILogic.detenerCambio()"
-                        ontouchstart="UILogic.iniciarCambioHoras(-0.5)" ontouchend="UILogic.detenerCambio()">−</button>
+                        ontouchstart="event.preventDefault(); UILogic.iniciarCambioHoras(-0.5)"
+                        ontouchend="event.preventDefault(); UILogic.detenerCambio()">−</button>
                 </div>
             </div>
             <div class="form-group">
@@ -1430,10 +1425,12 @@
                     <input type="number" id="config-dias-habiles" min="1" max="7" step="1" readonly />
                     <button class="btn-increment" onmousedown="UILogic.iniciarCambioDias(1)"
                         onmouseup="UILogic.detenerCambio()" onmouseleave="UILogic.detenerCambio()"
-                        ontouchstart="UILogic.iniciarCambioDias(1)" ontouchend="UILogic.detenerCambio()">+</button>
+                        ontouchstart="event.preventDefault(); UILogic.iniciarCambioDias(1)"
+                        ontouchend="event.preventDefault(); UILogic.detenerCambio()">+</button>
                     <button class="btn-increment" onmousedown="UILogic.iniciarCambioDias(-1)"
                         onmouseup="UILogic.detenerCambio()" onmouseleave="UILogic.detenerCambio()"
-                        ontouchstart="UILogic.iniciarCambioDias(-1)" ontouchend="UILogic.detenerCambio()">−</button>
+                        ontouchstart="event.preventDefault(); UILogic.iniciarCambioDias(-1)"
+                        ontouchend="event.preventDefault(); UILogic.detenerCambio()">−</button>
                 </div>
                 <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
             </div>
@@ -1772,7 +1769,9 @@
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
-                    Cerrar
+                    <svg class="icon">
+                        <use href="#icon-undo" />
+                    </svg> Volver
                 </button>
             </div>
         </div>
@@ -4575,7 +4574,7 @@
                             }
                         }
                     }
-                    
+
                     if (vistaActual === 'semana') {
                         tituloEl.innerHTML = `<svg class="icon"><use href="#icon-calendar-simple" /></svg> Esta Semana`;
 
@@ -4788,12 +4787,26 @@
                 }
 
                 function alternarVista() {
-                    let vistaActual = D.vistaActual() === 'semana' ? 'diaria' : 'semana';
-                    D.setVistaActual(vistaActual);
-                    try {
-                        localStorage.setItem('vistaActual', vistaActual);
-                    } catch (e) { }
-                    actualizarUI();
+                    const card = document.getElementById('stats-card');
+
+                    // 1. Iniciamos animación visual
+                    if (card) card.classList.add('cambiando-vista');
+
+                    // 2. Pequeño delay para permitir que la animación se vea
+                    setTimeout(() => {
+                        // Lógica original de cambio de datos
+                        let vistaActual = D.vistaActual() === 'semana' ? 'diaria' : 'semana';
+                        D.setVistaActual(vistaActual);
+                        try {
+                            localStorage.setItem('vistaActual', vistaActual);
+                        } catch (e) { }
+
+                        actualizarUI(); // Se actualizan los textos
+
+                        // 3. Terminamos la animación
+                        if (card) card.classList.remove('cambiando-vista');
+
+                    }, 100); // 200ms de espera
                 }
 
                 function pegarHoraActual(id) {
@@ -6025,10 +6038,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.45
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.46
     // ====================================================================
-    1) ahora el buffer semanal no se muestra al finalizar la semana
-    2) correcion de texto en lugares
+    1) animacion el la tarjeta de estado
 
     
     -->
