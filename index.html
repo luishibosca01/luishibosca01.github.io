@@ -1039,51 +1039,6 @@
             transform: scale(1.03);
         }
 
-        /* =========================================
-       MODO SMARTPHONE: HEADER INFERIOR
-       ========================================= */
-        @media (max-width: 768px) {
-
-            /* 1. Mover el Header abajo */
-            .header {
-                position: fixed;
-                /* Fijo para que flote sobre el contenido */
-                top: auto;
-                /* Anular la posición superior */
-                bottom: 0;
-                /* Pegar al fondo */
-                width: 100%;
-                /* Ocupar todo el ancho */
-                border-top: 1px solid var(--border);
-                /* Borde sutil arriba */
-
-                /* Sombra invertida (hacia arriba) */
-                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-
-                /* Asegurar que el fondo tape el contenido al hacer scroll */
-                background: var(--bg-header);
-            }
-
-            /* 2. Ajustar el cuerpo de la página */
-            body {
-                /* Agregar espacio abajo para que el último registro no quede tapado por el header */
-                padding-bottom: 80px;
-                /* Agregar un poco de aire arriba ya que el header ya no está ahí */
-                padding-top: 10px;
-            }
-
-            /* 3. Mover las notificaciones (Toast) hacia arriba */
-            .toast {
-                top: 20px;
-                /* Ahora aparecen arriba del todo */
-                bottom: auto;
-            }
-
-            /* Opcional: Centrar el título en el móvil para que se vea más como App */
-            .header h1 {
-                font-size: 1.1rem;
-            }
-        }
     </style>
 </head>
 
@@ -6032,6 +5987,7 @@ Generado por Sistema de Horarios
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.47
     // ====================================================================
     1) reubicacion de botones en modales
+    2) ELIMINADO media query para smartphones, header al borde inferior
 
     
     -->
