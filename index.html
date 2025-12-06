@@ -1199,6 +1199,12 @@
             </svg> Horarios
         </h1>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <button class="icon-btn" id="btn-install" style="display: none;" onclick="PWAInstaller.instalarApp()"
+                title="Instalar aplicación">
+                <svg class="icon">
+                    <use href="#icon-install" />
+                </svg>
+            </button>
             <button class="header-profile-btn" onclick="UILogic.abrirSelectorPerfiles()">
                 <svg class="icon">
                     <use href="#icon-briefcase" />
@@ -1206,13 +1212,6 @@
                 <span id="nombre-perfil-header">Cargando...</span>
                 <svg class="icon" style="font-size: 0.8em; margin-left: 2px;">
                     <use href="#icon-chevron-down" />
-                </svg>
-            </button>
-
-            <button class="icon-btn" id="btn-install" style="display: none;" onclick="PWAInstaller.instalarApp()"
-                title="Instalar aplicación">
-                <svg class="icon">
-                    <use href="#icon-install" />
                 </svg>
             </button>
         </div>
@@ -1535,7 +1534,7 @@
             <div class="form-group">
                 <label>Entrada</label>
                 <div class="input-with-btn">
-                    <input type="text" id="edit-entrada" inputmode="numeric" placeholder="hh:mm"" maxlength=" 5" />
+                    <input type="text" id="edit-entrada" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
                             <use href="#icon-clock" />
                         </svg></button>
@@ -1863,7 +1862,9 @@
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarSelectorPerfiles()">
-                    Cerrar
+                    <svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg>Cerrar
                 </button>
             </div>
         </div>
@@ -6027,6 +6028,7 @@ Generado por Sistema de Horarios
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.45
     // ====================================================================
     1) ahora el buffer semanal no se muestra al finalizar la semana
+    2) correcion de texto en lugares
 
     
     -->
