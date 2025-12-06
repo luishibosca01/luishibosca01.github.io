@@ -1215,11 +1215,6 @@
                     <use href="#icon-install" />
                 </svg>
             </button>
-            <button class="icon-btn" onclick="UILogic.mostrarConfig()">
-                <svg class="icon">
-                    <use href="#icon-settings" />
-                </svg>
-            </button>
         </div>
     </div>
 
@@ -1405,7 +1400,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.43</span>
+                <span class="version-text">v6.45</span>
             </h3>
 
             <div class="form-group">
@@ -1859,6 +1854,14 @@
                 </div>
             </div>
             <div class="btn-group">
+                <button class="btn-edit" onclick="UILogic.abrirConfigDesdePerfiles()">
+                    <svg class="icon">
+                        <use href="#icon-settings" />
+                    </svg>
+                    Configuración
+                </button>
+            </div>
+            <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarSelectorPerfiles()">
                     Cerrar
                 </button>
@@ -2152,7 +2155,7 @@
             // PERFIL MANAGER MODULE
             // ====================================================================
             const PerfilManager = (function (S) {
-                const MAX_PERFILES = 5; // cantidad maxima de perfiles permitida (1 de 3)
+                const MAX_PERFILES = 7; // cantidad maxima de perfiles permitida (1 de 3)
                 let perfilActual = 'default';
                 let perfiles = {};
 
@@ -4521,7 +4524,7 @@
                     const registros = D.registros();
                     const horasSemanales = D.horasSemanales();
                     const horasDiarias = D.horasDiarias();
-                    const diasHabilesConfig = D.diasHabiles();
+                    const diasHabilesConfig = D.diasHabiles(); // calcular si es fin de semana
                     const vistaActual = D.vistaActual();
 
                     if (!soloReloj) {
@@ -4530,6 +4533,17 @@
 
                     const { inicio: ini, fin: fn } = obtenerSemanaActual();
                     const hoy = obtenerFechaHoy();
+
+                    // --- 1. DETECTAR SI HOY ES DÍA DE DESCANSO ---
+                    const fechaHoyObj = new Date();
+                    const diaSemanaHoy = fechaHoyObj.getDay(); // 0 = Domingo, 6 = Sábado
+                    let esDiaDeDescanso = false;
+
+                    if (diaSemanaHoy === 0) {
+                        esDiaDeDescanso = (diasHabilesConfig < 7);
+                    } else {
+                        esDiaDeDescanso = (diaSemanaHoy > diasHabilesConfig);
+                    }
 
                     const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
 
@@ -4542,8 +4556,8 @@
 
                     if (bufferEl) {
                         bufferEl.innerHTML = '';
-                        // Solo mostrar buffer si hay objetivo (horasDiarias > 0)
-                        if (horasDiarias > 0 && bufferSemanal !== 0) {
+                        // Solo mostrar buffer si hay objetivo, no es 0 Y NO es día de descanso
+                        if (horasDiarias > 0 && bufferSemanal !== 0 && !esDiaDeDescanso) {
                             if (Math.abs(bufferSemanal) > 0.01) {
                                 const esPositivo = bufferSemanal > 0;
                                 const bufferIcono = esPositivo ? '✅' : '⚠️';
@@ -4560,7 +4574,7 @@
                             }
                         }
                     }
-
+                    
                     if (vistaActual === 'semana') {
                         tituloEl.innerHTML = `<svg class="icon"><use href="#icon-calendar-simple" /></svg> Esta Semana`;
 
@@ -4947,12 +4961,14 @@
                 }
 
                 function mostrarImportar() {
+                    $('modal-respaldo').classList.remove('show');
                     $('file-import').value = '';
                     $('modal-importar').classList.add('show');
                 }
 
                 function cerrarImportar() {
                     $('modal-importar').classList.remove('show');
+                    $('modal-respaldo').classList.add('show');
                 }
 
                 function poblarSelectorMeses() {
@@ -5562,8 +5578,8 @@ Generado por Sistema de Horarios
 
                     const perfiles = JSON.parse(localStorage.getItem('perfiles') || '{}');
 
-                    if (Object.keys(perfiles).length >= 5) { //Cantidad maxima de perfiles permitida (2 de 3)
-                        mostrarToast('Máximo de perfiles alcanzado (5)', 'error'); //Mensaje de cantidad maxima perfiles (3 de 3)
+                    if (Object.keys(perfiles).length >= 7) { //Cantidad maxima de perfiles permitida (2 de 3)
+                        mostrarToast('Máximo de perfiles alcanzado (7)', 'error'); //Mensaje de cantidad maxima perfiles (3 de 3)
                         return;
                     }
 
@@ -5603,6 +5619,13 @@ Generado por Sistema de Horarios
 
                 function cerrarSelectorPerfiles() {
                     document.getElementById('modal-selector-perfiles').classList.remove('show');
+                }
+
+                function abrirConfigDesdePerfiles() {
+                    // Cerrar el modal de perfiles
+                    document.getElementById('modal-selector-perfiles').classList.remove('show');
+                    // Abrir configuración
+                    mostrarConfig();
                 }
 
                 let perfilEnEdicion = null;
@@ -5800,7 +5823,8 @@ Generado por Sistema de Horarios
                         actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles,
                         cerrarRespaldo, mostrarRespaldo, abrirSelectorPerfiles, cerrarSelectorPerfiles,
                         init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
-                        crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, iniciarCambioDias, detenerCambio
+                        crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, iniciarCambioDias, detenerCambio,
+                        abrirConfigDesdePerfiles
                     };
 
                     // =========================================================
@@ -5901,12 +5925,16 @@ Generado por Sistema de Horarios
                     $('modal-filtros').classList.remove('show');
                 }
 
+                // Busca estas funciones dentro de UILogic (cerca de la línea 2030) y reemplázalas:
+
                 function mostrarAyuda() {
+                    $('modal-config').classList.remove('show');
                     $('modal-ayuda').classList.add('show');
                 }
 
                 function cerrarAyuda() {
                     $('modal-ayuda').classList.remove('show');
+                    $('modal-config').classList.add('show');
                 }
 
                 // --- FUNCIÓN GENÉRICA PARA COLAPSABLES ---
@@ -5963,7 +5991,7 @@ Generado por Sistema de Horarios
                     actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles, abrirSelectorPerfiles,
                     cerrarSelectorPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil,
                     eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles,
-                    iniciarCambioHoras, iniciarCambioDias, detenerCambio
+                    iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -5996,11 +6024,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.43
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.45
     // ====================================================================
-    1) cambio en el codigo de service worker
-    2) cambios en el boton incrementar decrementar horas dias, fix seleccion
-
+    1) ahora el buffer semanal no se muestra al finalizar la semana
 
     
     -->
