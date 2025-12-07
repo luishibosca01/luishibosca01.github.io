@@ -1038,7 +1038,6 @@
             background: var(--bg-body);
             transform: scale(1.03);
         }
-
     </style>
 </head>
 
@@ -1393,7 +1392,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.47</span>
+                <span class="version-text">v6.48</span>
             </h3>
 
             <div class="form-group">
@@ -1824,8 +1823,7 @@
                     </svg>
                     Configuración
                 </button>
-                <button class="time-btn" id="theme-toggle-modal" onclick="UILogic.alternarTema()"
-                    title="Cambiar Tema">
+                <button class="time-btn" id="theme-toggle-modal" onclick="UILogic.alternarTema()" title="Cambiar Tema">
                     <svg class="icon">
                         <use href="#icon-moon" />
                     </svg>
@@ -3404,18 +3402,22 @@
                             }
 
                             //Filtrar y normalizar datos
-                            const registrosImportados = data.registros.filter(r => {
-                                // Asegurar que tiempoFuera exista y sea null o string
-                                if (!r.hasOwnProperty('tiempoFuera')) r.tiempoFuera = null;
-                                if (r.tiempoFuera === '') r.tiempoFuera = null;
+                            const registrosImportados = data.registros
+                                .filter(r => S.validarRegistroSeguro(r))
+                                .map(r => {
+                                    const validarHora = (h) => h && S.REGEX_PATTERNS.HORA.test(h) ? S.sanitizeString(h, 5) : null;
 
-                                //Normalizar tipos numéricos
-                                if (typeof r.horas === 'string') r.horas = parseFloat(r.horas);
-                                if (typeof r.minutos === 'string') r.minutos = parseFloat(r.minutos);
-                                if (typeof r.total === 'string') r.total = parseFloat(r.total);
-
-                                return S.validarRegistroSeguro(r);
-                            });
+                                    return {
+                                        id: (r.id && S.REGEX_PATTERNS.ID.test(r.id)) ? r.id : S.generarIDSeguro(),
+                                        fecha: S.sanitizeString(r.fecha, 10),
+                                        entrada: validarHora(r.entrada),
+                                        salida: validarHora(r.salida),
+                                        tiempoFuera: validarHora(r.tiempoFuera),
+                                        horas: Math.max(0, Math.min(24, parseFloat(r.horas) || 0)),
+                                        minutos: Math.max(0, Math.min(59, parseFloat(r.minutos) || 0)),
+                                        total: Math.max(0, Math.min(24, parseFloat(r.total) || 0))
+                                    };
+                                });
 
                             if (registrosImportados.length === 0) {
                                 UILogic.mostrarToast('No se encontraron registros válidos', 'warning');
@@ -5984,10 +5986,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.47
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.48
     // ====================================================================
-    1) reubicacion de botones en modales
-    2) ELIMINADO media query para smartphones, header al borde inferior
+    1) mejoras en el codigo de importacion
 
     
     -->
