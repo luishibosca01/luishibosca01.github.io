@@ -1392,7 +1392,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.48</span>
+                <span class="version-text">v6.49</span>
             </h3>
 
             <div class="form-group">
@@ -1631,83 +1631,97 @@
             </h3>
             <div class="ayuda-scroll-container"
                 style="text-align: left; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+
                 <p><strong id="inicio-ayuda">Temas de ayuda:</strong></p>
                 <ul class="indice-lista">
-                    <li class="indice-item"><a href="#ayuda-entrada" class="indice-link">📥 Registrar entrada</a></li>
-                    <li class="indice-item"><a href="#ayuda-salida" class="indice-link">📤 Registrar salida</a></li>
+                    <li class="indice-item"><a href="#ayuda-perfiles" class="indice-link">💼 Gestión de Perfiles</a>
+                    </li>
+                    <li class="indice-item"><a href="#ayuda-entrada" class="indice-link">📥 Registrar entrada/salida</a>
+                    </li>
+                    <li class="indice-item"><a href="#ayuda-vistas" class="indice-link">👁️ Vista Diario / Semanal</a>
+                    </li>
                     <li class="indice-item"><a href="#ayuda-manual" class="indice-link">✏️ Fecha/Hora manual</a></li>
-                    <li class="indice-item"><a href="#ayuda-rango" class="indice-link">📅 Registrar rango</a></li>
-                    <li class="indice-item"><a href="#ayuda-borrar-rango" class="indice-link">🗑️ Borrar rango</a></li>
+                    <li class="indice-item"><a href="#ayuda-rango" class="indice-link">📅 Vacaciones y Lotes</a></li>
                     <li class="indice-item"><a href="#ayuda-break" class="indice-link">☕ Timer / Tiempo fuera</a></li>
                     <li class="indice-item"><a href="#ayuda-editar" class="indice-link">📝 Editar registro</a></li>
-                    <li class="indice-item"><a href="#ayuda-codigos" class="indice-link">🔢 Fechas especiales</a></li>
-                    <li class="indice-item"><a href="#ayuda-extra" class="indice-link">⚙️ Funciones extra</a></li>
+                    <li class="indice-item"><a href="#ayuda-codigos" class="indice-link">🔢 Códigos horarios</a></li>
+                    <li class="indice-item"><a href="#ayuda-extra" class="indice-link">⚙️ Backup y Configuración</a>
+                    </li>
                 </ul>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
 
-                <p id="ayuda-entrada"><strong>¿Cómo registro una entrada?</strong></p>
-                <p>Tocá el botón <svg class="icon">
-                        <use href="#icon-save" />
-                    </svg> <strong>Registrar</strong>. Al hacerlo se genera un registro con la fecha y hora actual en el
-                    campo de entrada.</p>
+                <p id="ayuda-perfiles"><strong>¿Cómo funcionan los Perfiles?</strong></p>
+                <p>Gestiona múltiples trabajos de forma independiente:</p>
+                <ul style="padding-left: 1.5rem; margin-top: 0.5rem;">
+                    <li><strong>Cambiar:</strong> Toca el nombre del perfil en la cabecera (arriba a la derecha).</li>
+                    <li><strong>Crear:</strong> En el menú, escribe un nombre y toca <svg class="icon">
+                            <use href="#icon-plus" />
+                        </svg>.</li>
+                    <li><strong>Datos independientes:</strong> Cada perfil tiene sus propios registros, configuración de
+                        horas y días hábiles.</li>
+                </ul>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
 
-                <p id="ayuda-salida"><strong>¿Cómo registro una salida?</strong></p>
-                <p>Tocá el botón <svg class="icon">
+                <p id="ayuda-entrada"><strong>Registrar Entrada y Salida</strong></p>
+                <p>Simplemente toca el botón grande <svg class="icon">
                         <use href="#icon-save" />
-                    </svg> <strong>Registrar</strong>. Si ya tienes una entrada hoy, este botón completará el campo de
-                    salida automáticamente.</p>
+                    </svg> <strong>Registrar</strong>.</p>
+                <ul style="padding-left: 1.5rem;">
+                    <li>Si no hay registro hoy: Crea la <strong>Entrada</strong>.</li>
+                    <li>Si ya hay entrada: Registra la <strong>Salida</strong>.</li>
+                </ul>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
 
-                <p id="ayuda-manual"><strong>¿Cómo agregar una fecha y horas personalizadas?</strong></p>
-                <p>Tocá el botón <svg class="icon">
+                <p id="ayuda-vistas"><strong>Cambiar vista (Hoy / Semana)</strong></p>
+                <p>Toca la <strong>tarjeta principal</strong> de estadísticas para alternar entre ver el progreso de
+                    <strong>HOY</strong> o el acumulado de la <strong>SEMANA</strong>.</p>
+                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                <p id="ayuda-manual"><strong>Fecha y Hora manual</strong></p>
+                <p>Toca la flecha <svg class="icon">
                         <use href="#icon-chevron-down" />
-                    </svg> que se encuentra al costado derecho del botón Registrar para expandir el formulario manual.
-                </p>
+                    </svg> a la derecha del botón Registrar para desplegar los campos y elegir una fecha u hora
+                    específica.</p>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
 
-                <p id="ayuda-rango"><strong>¿Cómo registro un rango de fechas?</strong></p>
-                <p>Tocá el botón <svg class="icon">
+                <p id="ayuda-rango"><strong>Vacaciones y Lotes</strong></p>
+                <p>Toca el botón <svg class="icon">
                         <use href="#icon-calendar-simple" />
-                    </svg> junto al campo fecha. Se abre un menú para elegir "Desde" y "Hasta" y el tipo de registro
-                    (Vacaciones, Licencias, etc.).</p>
+                    </svg> junto a la fecha. Podrás registrar (o borrar) múltiples días simultáneamente como Vacaciones,
+                    Ausencias o Feriados.</p>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
 
-                <p id="ayuda-borrar-rango"><strong>¿Cómo borro un rango de fechas?</strong></p>
-                <p>En el mismo menú del calendario <svg class="icon">
-                        <use href="#icon-calendar-simple" />
-                    </svg>, selecciona las fechas, el tipo de registro y toca el botón <strong>Borrar</strong>.</p>
-                <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
-
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-
-                <p id="ayuda-break"><strong>¿Cómo registro un "break" o tiempo fuera?</strong></p>
-                <p>Tocá el botón <svg class="icon">
+                <p id="ayuda-break"><strong>Timer / Tiempo fuera</strong></p>
+                <p>Toca el botón <svg class="icon">
                         <use href="#icon-coffee" />
-                    </svg> junto a Registrar. El timer comenzará a correr. Al tocarlo de nuevo, el tiempo transcurrido
-                    se descontará del total del día.</p>
+                    </svg>. El timer contará el tiempo que no estás trabajando. Al detenerlo, ese tiempo se descontará
+                    automáticamente del total del día.</p>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
 
-                <p id="ayuda-editar"><strong>¿Cómo edito un registro?</strong></p>
-                <p>Toca cualquier registro en la lista del Histórico. Se abrirá un menú para modificar fecha, horas o
-                    eliminar el registro.</p>
+                <p id="ayuda-editar"><strong>Editar historial</strong></p>
+                <p>Toca cualquier registro en la lista inferior para modificarlo. Puedes usar el candado <svg
+                        class="icon">
+                        <use href="#icon-lock" />
+                    </svg> para prevenir ediciones accidentales.</p>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
 
-                <p id="ayuda-codigos"><strong>Fechas especiales (Feriados/Licencias/etc)</strong></p>
-                <p>Editando o agregando manualmente, usa estos horarios:</p>
+                <p id="ayuda-codigos"><strong>Códigos internos</strong></p>
+                <p>El sistema usa estas horas para identificar días especiales:</p>
                 <ul style="list-style: none; padding-left: 0.5rem;">
                     <li>🥳 <strong>Feriados:</strong> 00:00 a 00:00</li>
                     <li>✈️ <strong>Ausencias:</strong> 11:11 a 11:11</li>
@@ -1717,20 +1731,20 @@
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
 
-                <p id="ayuda-extra"><strong>Funciones adicionales</strong></p>
+                <p id="ayuda-extra"><strong>Backup y Configuración</strong></p>
                 <ul style="padding-left: 1.5rem;">
-                    <li>Exportar/Importar (Configuración)</li>
-                    <li>Configurar días hábiles (Configuración)</li>
-                    <li>Configurar horas diarias (Configuración)</li>
-                    <li>Deshacer/Rehacer (Menú Histórico)</li>
-                    <li>Filtros de búsqueda (Menú Histórico)</li>
-                    <li>Almacenamiento de datos en localStorage</li>
+                    <li><strong>Exportar:</strong> Guarda una copia de seguridad (JSON) del perfil actual.</li>
+                    <li><strong>Importar:</strong> Restaura datos (puedes Combinar o Reemplazar).</li>
+                    <li><strong>Filtros:</strong> Usa el icono <svg class="icon">
+                            <use href="#icon-filter" />
+                        </svg> en el historial para buscar fechas específicas.</li>
                 </ul>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
+
                 <br><br>
-                <p><strong>LA DISPONIBILIDAD Y USABILIDAD DEL SISTEMA ESTÁ GARANTIZADO POR PINDONGA.
-                        EL CODIGO ESTA DISPONIBLE EN EL REPOSITORIO DE GITHUB PARA BAJAR, EDITAR Y
-                        MEJORAR LIBREMENTE.</strong></p>
+                <p style="font-size: 0.8rem; text-align: center; opacity: 0.7;">
+                    Horarios Código Libre
+                </p>
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
@@ -1888,6 +1902,47 @@
             </div>
         </div>
     </div>
+    <div class="modal" id="modal-novedades">
+    <div class="modal-content" style="border: 2px solid var(--c-green);">
+        <h3>
+            <span class="modal-title-block">
+                <svg class="icon" style="color: var(--c-green);"><use href="#icon-install" /></svg>
+                ¡Nueva Actualización!
+            </span>
+            <span class="version-text" id="novedades-version-badge" style="color: var(--c-green); font-weight:bold;"></span>
+        </h3>
+        
+        <div id="novedades-contenido" class="ayuda-scroll-container" 
+             style="max-height: 300px; overflow-y: auto; margin: 1rem 0; padding-right: 5px; font-size: 0.95rem; line-height: 1.5;">
+            </div>
+
+        <div class="btn-group">
+            <button class="btn-export" onclick="UpdateSystem.marcarComoVisto()">
+                ¡Entendido!
+            </button>
+        </div>
+    </div>
+    <div class="modal" id="modal-novedades">
+    <div class="modal-content" style="border: 2px solid var(--c-green);">
+        <h3>
+            <span class="modal-title-block">
+                <svg class="icon" style="color: var(--c-green);"><use href="#icon-install" /></svg>
+                ¡Nueva Actualización!
+            </span>
+            <span class="version-text" id="novedades-version-badge" style="color: var(--c-green); font-weight:bold;"></span>
+        </h3>
+        
+        <div id="novedades-contenido" class="ayuda-scroll-container" 
+             style="max-height: 300px; overflow-y: auto; margin: 1rem 0; padding-right: 5px; font-size: 0.95rem; line-height: 1.5;">
+            </div>
+
+        <div class="btn-group">
+            <button class="btn-export" onclick="UpdateSystem.marcarComoVisto()">
+                ¡Entendido!
+            </button>
+        </div>
+    </div>
+</div>
 
     <script>
         (function () {
@@ -5756,8 +5811,6 @@ Generado por Sistema de Horarios
                         return;
                     }
 
-                    // 1. INICIALIZAR SISTEMAS Y EXPONER VARIABLES GLOBALES PRIMERO
-                    // Esto asegura que los botones funcionen aunque falle la interfaz gráfica después
                     PerfilManager.inicializar();
 
                     window.DataManagement = {
@@ -5980,15 +6033,79 @@ Generado por Sistema de Horarios
                     .catch(err => console.error('❌ Error SW:', err));
             });
         }
+
     </script>
+    <script>
+
+    // ====================================================================
+    // SISTEMA DE NOTIFICACIONES DE ACTUALIZACIÓN
+    // ====================================================================
+    const UpdateSystem = (function() {
+        
+        // >>>>> CONFIGURACIÓN <<<<<
+        const CONFIG = {
+            version: '6.49', // Cambia este número para disparar el aviso
+            
+            mensaje: `
+                <ul style="margin-left: 1.5rem; margin-top:0.5rem;">
+                    <li><strong>💼 Sistema de Perfiles:</strong> Ahora puedes gestionar múltiples trabajos sin mezclar los datos,
+                        agregando perfiles en el selector arriba a la derecha. los registros de la version antiguo
+                        se movieron al perfil por defecto "Principal (recuperado), se puede modificar el nomobre o crear otro perfil."</li>
+                </ul>
+                <p style="margin-top: 1rem; font-size: 0.85rem; opacity: 0.8;">
+                </p>
+            `
+        };
+        // >>>>> FIN DE LA CONFIGURACIÓN <<<<<
+
+        function init() {
+            // Verificar si ya vio esta versión
+            const ultimaVersionVista = localStorage.getItem('ultima_version_vista');
+
+            if (ultimaVersionVista !== CONFIG.version) {
+                mostrarNovedades();
+            }
+        }
+
+        function mostrarNovedades() {
+            const modal = document.getElementById('modal-novedades');
+            const contenido = document.getElementById('novedades-contenido');
+            const badge = document.getElementById('novedades-version-badge');
+
+            if (modal && contenido) {
+                contenido.innerHTML = CONFIG.mensaje;
+                if(badge) badge.textContent = `v${CONFIG.version}`;
+                
+                // Mostrar modal (usando tu clase .show existente)
+                modal.classList.add('show');
+            }
+        }
+
+        function marcarComoVisto() {
+            // Guardar en memoria que ya vio esta versión
+            localStorage.setItem('ultima_version_vista', CONFIG.version);
+            
+            // Cerrar modal
+            const modal = document.getElementById('modal-novedades');
+            if (modal) modal.classList.remove('show');
+        }
+
+        // Auto-iniciar al cargar
+        window.addEventListener('load', init);
+
+        return {
+            marcarComoVisto
+        };
+    })();
+</script>
 </body>
 
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.48
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.49
     // ====================================================================
-    1) mejoras en el codigo de importacion
+    1) agregado banner de novedades al actualizar
 
     
     -->
