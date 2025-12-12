@@ -2788,6 +2788,7 @@
 
                 function calcularHorasFeriadoEnRango(inicio, fin) {
                     const horasDiariasLocal = horasDiarias;
+                    const diasHabilesConfig = diasHabiles;
                     let horasDescontar = 0;
 
                     registros.forEach(r => {
@@ -2796,7 +2797,14 @@
                         const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
 
                         if (r.fecha >= inicio && r.fecha <= fin && (esFeriado || esAusencia || esVacaciones)) {
-                            horasDescontar += horasDiariasLocal;
+                            // 🔧 CORRECCIÓN: Solo descontar si el día especial cae en un día hábil
+                            const fechaObj = new Date(r.fecha.replace(/-/g, '/') + ' 00:00:00');
+                            const diaSemana = fechaObj.getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb
+
+                            // Solo descontar si este día estaba configurado como día laboral
+                            if (diasHabilesConfig.includes(diaSemana)) {
+                                horasDescontar += horasDiariasLocal;
+                            }
                         }
                     });
                     return horasDescontar;
@@ -4532,25 +4540,36 @@
                     const { inicio: ini, fin: fn } = obtenerSemanaActual();
                     const hoy = obtenerFechaHoy();
 
-                    // --- NUEVO: Detectar si hoy es descanso ---
-                    const fechaHoyObj = new Date();
-                    const diaSemanaHoy = fechaHoyObj.getDay();
-                    const esDiaDeDescanso = !diasHabilesConfig.includes(diaSemanaHoy);
+                    // --- NUEVO: Lógica estricta de Semana Abierta/Cerrada ---
+                    const diaObj = new Date();
+                    const diaSemanaHoy = diaObj.getDay(); // 0=Dom, 1=Lun... 6=Sab
 
-                    // --- NUEVO: Detectar si quedan días laborales en el futuro de esta semana ---
+                    // Mapa para ordenar Lun(1) a Dom(7) y facilitar cálculo de "futuro"
+                    const mapDia = d => d === 0 ? 7 : d;
+                    const hoyIndex = mapDia(diaSemanaHoy);
+
+                    // 1. Detectar si quedan días laborales en el FUTURO (Mañana en adelante)
                     let quedanDiasFuturos = false;
-                    let iterDate = new Date(fechaHoyObj);
-                    iterDate.setDate(iterDate.getDate() + 1); // Empezamos a revisar desde mañana
-                    const finDeSemanaObj = new Date(fn.replace(/-/g, '/') + ' 23:59:59');
-
-                    while (iterDate <= finDeSemanaObj) {
-                        if (diasHabilesConfig.includes(iterDate.getDay())) {
+                    for (let d = hoyIndex + 1; d <= 7; d++) {
+                        const diaReal = d === 7 ? 0 : d; // De vuelta a formato JS (0-6)
+                        if (diasHabilesConfig.includes(diaReal)) {
                             quedanDiasFuturos = true;
                             break;
                         }
-                        iterDate.setDate(iterDate.getDate() + 1);
                     }
-                    // --------------------------------------------------------------------------
+
+                    // 2. Detectar estado de HOY
+                    const esDiaHabilHoy = diasHabilesConfig.includes(diaSemanaHoy);
+                    const registroHoy = registros.find(r => r.fecha === hoy);
+                    const hoyCerrado = registroHoy && registroHoy.salida; // ¿Ya fiché salida?
+
+                    // 3. Determinar si la semana sigue "Activa" (para mostrar Faltan vs Faltaron)
+                    // La semana está activa si: Quedan días futuros O (Hoy es hábil y no he cerrado)
+                    const semanaAbierta = quedanDiasFuturos || (esDiaHabilHoy && !hoyCerrado);
+                    // --------------------------------------------------------
+
+                    // Detectar si hoy es descanso (visual)
+                    const esDiaDeDescanso = !esDiaHabilHoy;
 
                     const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
 
@@ -4564,23 +4583,20 @@
                     // BUFFER
                     if (bufferEl) {
                         bufferEl.innerHTML = '';
-                        // Mostramos buffer si hay deuda/saldo, incluso en días de descanso si hay actividad
-                        if (horasDiarias > 0 && Math.abs(bufferSemanal) > 0.01) {
-                            // Opcional: Ocultar si es descanso Y no hay deuda (para no molestar)
-                            // Pero si hay deuda o saldo, es útil verlo siempre.
-                            if (!esDiaDeDescanso || Math.abs(bufferSemanal) > 0.1) {
-                                const esPositivo = bufferSemanal > 0;
-                                const bufferIcono = esPositivo ? '✅' : '⚠️';
-                                const bufferColor = esPositivo ? '#60ac94' : '#c05d76';
-                                const bufferTextoHoras = horasATexto(Math.abs(bufferSemanal));
-                                const bufferLabel = esPositivo ? 'extras' : 'faltantes';
 
-                                const span = document.createElement('span');
-                                span.style.color = bufferColor;
-                                span.style.fontWeight = '500';
-                                span.textContent = `${bufferIcono} ${bufferTextoHoras} ${bufferLabel} esta semana`;
-                                bufferEl.appendChild(span);
-                            }
+                        // 🔧 Solo mostrar buffer si la semana sigue ABIERTA
+                        if (horasDiarias > 0 && Math.abs(bufferSemanal) > 0.01 && semanaAbierta) {
+                            const esPositivo = bufferSemanal > 0;
+                            const bufferIcono = esPositivo ? '✅' : '⚠️';
+                            const bufferColor = esPositivo ? '#60ac94' : '#c05d76';
+                            const bufferTextoHoras = horasATexto(Math.abs(bufferSemanal));
+                            const bufferLabel = esPositivo ? 'extras' : 'faltantes';
+
+                            const span = document.createElement('span');
+                            span.style.color = bufferColor;
+                            span.style.fontWeight = '500';
+                            span.textContent = `${bufferIcono} ${bufferTextoHoras} ${bufferLabel} esta semana`;
+                            bufferEl.appendChild(span);
                         }
                     }
 
@@ -4588,8 +4604,11 @@
                     if (vistaActual === 'semana') {
                         tituloEl.innerHTML = `<svg class="icon"><use href="#icon-calendar-simple" /></svg> Esta Semana`;
 
+                        // 🔧 CORRECCIÓN: Solo contar registros hasta HOY
+                        const fechaLimiteCalculo = hoy < fn ? hoy : fn;
+
                         const tot = registros.filter(r =>
-                            r.fecha >= ini && r.fecha <= fn &&
+                            r.fecha >= ini && r.fecha <= fechaLimiteCalculo &&
                             !(r.entrada === '00:00' && r.salida === '00:00') &&
                             !(r.entrada === '11:11' && r.salida === '11:11') &&
                             !(r.entrada === '22:22' && r.salida === '22:22')
@@ -4613,19 +4632,14 @@
                                 mensajeEl.style.display = 'block';
                                 if (objetivoAjustado === 0) {
                                     mensajeEl.textContent = `Semana sin objetivo. Total: ${horasATexto(tot)}`;
-                                } else if (esDiaDeDescanso) {
-                                    // --- LÓGICA CORREGIDA AQUÍ ---
+                                } else {
                                     if (tot >= objetivoAjustado) {
                                         mensajeEl.textContent = `Hiciste ${horasATexto(tot - objetivoAjustado)} de más`;
                                     } else {
-                                        // Si quedan días futuros, usamos "Faltan" (Presente). Si no, "Faltaron" (Pasado).
-                                        const verbo = quedanDiasFuturos ? "Faltan" : "Faltaron";
+                                        // 🔧 Verbo basado en si la semana está abierta o cerrada
+                                        const verbo = semanaAbierta ? "Faltan" : "Faltaron";
                                         mensajeEl.textContent = `${verbo} ${horasATexto(objetivoAjustado - tot)}`;
                                     }
-                                } else {
-                                    mensajeEl.textContent = tot >= objetivoAjustado ?
-                                        `${horasATexto(tot - objetivoAjustado)} de más!` :
-                                        `Faltan ${horasATexto(objetivoAjustado - tot)}`;
                                 }
                             }
                         }
@@ -6182,6 +6196,7 @@ Generado por Sistema Horarios
 <!--// ====================================================================
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.62
     // ====================================================================
-    1) Se agrega linea separadora de semanas en el historico
+    1) Se corrigen varios bugs en la tarjeta de esta semana, la cual calculaba 
+    incorrectamente las horas segun los registro de la semana en curso
 
     -->
