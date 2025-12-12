@@ -4542,36 +4542,44 @@
                     const { inicio: ini, fin: fn } = obtenerSemanaActual();
                     const hoy = obtenerFechaHoy();
 
-                    // --- NUEVO: Lógica estricta de Semana Abierta/Cerrada ---
+                    // --- DETECCIÓN DE DÍAS HÁBILES (COMPATIBLE CON ARRAY v6.63) ---
                     const diaObj = new Date();
-                    const diaSemanaHoy = diaObj.getDay(); // 0=Dom, 1=Lun... 6=Sab
+                    const diaSemanaHoy = diaObj.getDay(); // 0=Dom, 1=Lun...
 
+                    // Verificamos si es array (versiones nuevas) o número (fallback)
+                    let esDiaHabilHoy = true;
+                    if (Array.isArray(diasHabilesConfig)) {
+                        esDiaHabilHoy = diasHabilesConfig.includes(diaSemanaHoy);
+                    } else {
+                        if (diaSemanaHoy === 0) esDiaHabilHoy = (diasHabilesConfig === 7);
+                        else esDiaHabilHoy = (diaSemanaHoy <= diasHabilesConfig);
+                    }
+                    const esDiaDeDescanso = !esDiaHabilHoy;
+
+                    // --- LÓGICA DE SEMANA ABIERTA/CERRADA (v6.63) ---
                     // Mapa para ordenar Lun(1) a Dom(7) y facilitar cálculo de "futuro"
                     const mapDia = d => d === 0 ? 7 : d;
                     const hoyIndex = mapDia(diaSemanaHoy);
 
-                    // 1. Detectar si quedan días laborales en el FUTURO (Mañana en adelante)
+                    // Detectar si quedan días laborales en el FUTURO (Mañana en adelante)
                     let quedanDiasFuturos = false;
-                    for (let d = hoyIndex + 1; d <= 7; d++) {
-                        const diaReal = d === 7 ? 0 : d; // De vuelta a formato JS (0-6)
-                        if (diasHabilesConfig.includes(diaReal)) {
-                            quedanDiasFuturos = true;
-                            break;
+                    // Solo si es array iteramos (v6.63), sino usamos lógica simple
+                    if (Array.isArray(diasHabilesConfig)) {
+                        for (let d = hoyIndex + 1; d <= 7; d++) {
+                            const diaReal = d === 7 ? 0 : d;
+                            if (diasHabilesConfig.includes(diaReal)) {
+                                quedanDiasFuturos = true;
+                                break;
+                            }
                         }
+                    } else {
+                        // Fallback simple
+                        quedanDiasFuturos = hoyIndex < diasHabilesConfig;
                     }
 
-                    // 2. Detectar estado de HOY
-                    const esDiaHabilHoy = diasHabilesConfig.includes(diaSemanaHoy);
                     const registroHoy = registros.find(r => r.fecha === hoy);
-                    const hoyCerrado = registroHoy && registroHoy.salida; // ¿Ya fiché salida?
-
-                    // 3. Determinar si la semana sigue "Activa" (para mostrar Faltan vs Faltaron)
-                    // La semana está activa si: Quedan días futuros O (Hoy es hábil y no he cerrado)
+                    const hoyCerrado = registroHoy && registroHoy.salida;
                     const semanaAbierta = quedanDiasFuturos || (esDiaHabilHoy && !hoyCerrado);
-                    // --------------------------------------------------------
-
-                    // Detectar si hoy es descanso (visual)
-                    const esDiaDeDescanso = !esDiaHabilHoy;
 
                     const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
 
@@ -4582,11 +4590,10 @@
                     const hintEl = $('toggle-hint');
                     const bufferEl = $('stats-buffer');
 
-                    // BUFFER
+                    // --- MOSTRAR BUFFER (SOLO SI SEMANA ABIERTA) ---
                     if (bufferEl) {
                         bufferEl.innerHTML = '';
-
-                        // 🔧 Solo mostrar buffer si la semana sigue ABIERTA
+                        // Solo mostrar buffer si hay horas configuradas, hay diferencia y la semana no terminó
                         if (horasDiarias > 0 && Math.abs(bufferSemanal) > 0.01 && semanaAbierta) {
                             const esPositivo = bufferSemanal > 0;
                             const bufferIcono = esPositivo ? '✅' : '⚠️';
@@ -4602,11 +4609,13 @@
                         }
                     }
 
+                    // =========================================================
                     // VISTA SEMANAL
+                    // =========================================================
                     if (vistaActual === 'semana') {
                         tituloEl.innerHTML = `<svg class="icon"><use href="#icon-calendar-simple" /></svg> Esta Semana`;
 
-                        // 🔧 CORRECCIÓN: Solo contar registros hasta HOY
+                        // Solo contar hasta HOY
                         const fechaLimiteCalculo = hoy < fn ? hoy : fn;
 
                         const tot = registros.filter(r =>
@@ -4638,7 +4647,6 @@
                                     if (tot >= objetivoAjustado) {
                                         mensajeEl.textContent = `Hiciste ${horasATexto(tot - objetivoAjustado)} de más`;
                                     } else {
-                                        // 🔧 Verbo basado en si la semana está abierta o cerrada
                                         const verbo = semanaAbierta ? "Faltan" : "Faltaron";
                                         mensajeEl.textContent = `${verbo} ${horasATexto(objetivoAjustado - tot)}`;
                                     }
@@ -4647,7 +4655,9 @@
                         }
                         if (hintEl) hintEl.textContent = 'Toca para ver Hoy';
 
-                        // VISTA DIARIA
+                        // =========================================================
+                        // VISTA DIARIA (HOY)
+                        // =========================================================
                     } else {
                         tituloEl.innerHTML = `<svg class="icon"><use href="#icon-clock" /></svg> Hoy`;
                         const regHoy = registros.find(r => r.fecha === hoy);
@@ -4655,18 +4665,30 @@
                         let objetivoDiario = horasDiarias;
 
                         if (regHoy && regHoy.entrada) {
-                            const isSpecial = ['00:00', '11:11', '22:22'].includes(regHoy.entrada) && regHoy.entrada === regHoy.salida;
+                            const isFeriadoHoy = regHoy.entrada === '00:00' && regHoy.salida === '00:00';
+                            const isAusenciaHoy = regHoy.entrada === '11:11' && regHoy.salida === '11:11';
+                            const isVacacionesHoy = regHoy.entrada === '22:22' && regHoy.salida === '22:22';
 
-                            if (isSpecial) {
-                                let label = isSpecial && regHoy.entrada === '00:00' ? '🥳 Feriado' :
-                                    regHoy.entrada === '11:11' ? '✈️ Ausencia' : '🏖️ Vacaciones';
-                                if (statsEl) statsEl.innerHTML = `<div>${label}</div>`;
+                            if (isFeriadoHoy) {
+                                if (statsEl) statsEl.innerHTML = `<div>🥳 Feriado</div>`;
+                                if (progressEl) { progressEl.style.width = '100%'; setProgressBarColor(progressEl, 'purple'); }
+                                if (mensajeEl) mensajeEl.textContent = `¡Día no laboral!`;
+
+                            } else if (isAusenciaHoy) {
+                                if (statsEl) statsEl.innerHTML = `<div>✈️ Ausencia</div>`;
                                 if (progressEl) { progressEl.style.width = '100%'; setProgressBarColor(progressEl, 'purple'); }
                                 if (mensajeEl) mensajeEl.textContent = `¡Día justificado!`;
+
+                            } else if (isVacacionesHoy) {
+                                if (statsEl) statsEl.innerHTML = `<div>🏖️ Vacaciones</div>`;
+                                if (progressEl) { progressEl.style.width = '100%'; setProgressBarColor(progressEl, 'purple'); }
+                                if (mensajeEl) mensajeEl.textContent = `¡Día de vacaciones!`;
+
                             } else {
-                                // Día normal trabajado
-                                if (regHoy.salida) tiempoTranscurrido = regHoy.total;
-                                else {
+                                // --- DÍA NORMAL CON REGISTRO ---
+                                if (regHoy.salida) {
+                                    tiempoTranscurrido = regHoy.total;
+                                } else {
                                     const ahora = new Date();
                                     const horaActual = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
                                     const t = D.calcularHoras(regHoy.entrada, horaActual, regHoy.tiempoFuera || null);
@@ -4674,24 +4696,79 @@
                                 }
 
                                 const prog = objetivoDiario > 0 ? Math.min((tiempoTranscurrido / objetivoDiario) * 100, 100) : 100;
-                                if (statsEl) statsEl.innerHTML = `<div>${horasATexto(tiempoTranscurrido)}</div>`;
-                                if (progressEl) { progressEl.style.width = prog + '%'; }
 
-                                if (regHoy.salida) { // CERRADO
-                                    setProgressBarColor(progressEl, tiempoTranscurrido >= objetivoDiario ? 'green' : 'red');
-                                    const dif = tiempoTranscurrido - objetivoDiario;
-                                    if (mensajeEl) mensajeEl.textContent = dif >= 0 ? `${horasATexto(dif)} extras` : `Faltaron ${horasATexto(Math.abs(dif))}`;
-                                } else { // ABIERTO
-                                    setProgressBarColor(progressEl, 'blue');
-                                    const faltante = Math.max(0, objetivoDiario - tiempoTranscurrido);
-                                    if (mensajeEl) {
-                                        if (tiempoTranscurrido >= objetivoDiario) mensajeEl.textContent = `Te podes ir`;
-                                        else mensajeEl.textContent = `Faltan ${horasATexto(faltante)}`;
+                                if (statsEl) statsEl.innerHTML = `<div>${horasATexto(tiempoTranscurrido)}</div>`;
+                                if (progressEl) {
+                                    progressEl.style.width = prog + '%';
+                                }
+
+                                if (regHoy.salida) {
+                                    // -------------------------------------------------
+                                    // CASO 1: DÍA CERRADO (Ya marcaste salida)
+                                    // -------------------------------------------------
+                                    if (objetivoDiario === 0) {
+                                        setProgressBarColor(progressEl, 'blue');
+                                        if (mensajeEl) mensajeEl.style.display = 'none';
+                                    } else {
+                                        if (mensajeEl) mensajeEl.style.display = 'block';
+                                        setProgressBarColor(progressEl, tiempoTranscurrido >= objetivoDiario ? 'green' : 'red');
+                                        const dif = tiempoTranscurrido - objetivoDiario;
+                                        if (mensajeEl) mensajeEl.textContent = dif >= 0 ? `${horasATexto(dif)} extras` : `Faltaron ${horasATexto(Math.abs(dif))}`;
+                                    }
+                                } else {
+                                    // -------------------------------------------------
+                                    // CASO 2: DÍA ABIERTO (Estás trabajando ahora)
+                                    // -------------------------------------------------
+                                    if (objetivoDiario === 0) {
+                                        setProgressBarColor(progressEl, 'blue');
+                                        if (mensajeEl) mensajeEl.style.display = 'none';
+                                    } else {
+                                        if (mensajeEl) mensajeEl.style.display = 'block';
+
+                                        // 1. ¿Objetivo Cumplido HOY?
+                                        const objetivoCumplido = tiempoTranscurrido >= objetivoDiario;
+
+                                        // Barra: Verde si cumpliste, Azul si falta
+                                        setProgressBarColor(progressEl, objetivoCumplido ? 'green' : 'blue');
+
+                                        const faltante = Math.max(0, objetivoDiario - tiempoTranscurrido);
+
+                                        if (mensajeEl) {
+                                            if (objetivoCumplido) {
+                                                // --- A) YA CUMPLISTE LAS HORAS DE HOY ---
+                                                const extra = tiempoTranscurrido - objetivoDiario;
+
+                                                // Chequeo opcional: ¿Debes tiempo de la semana a pesar de haber cumplido hoy?
+                                                // bufferSemanal < 0 significa deuda total. extra es lo que ganaste hoy.
+                                                // Si tu deuda es mayor a lo que ganaste hoy, aun debes.
+                                                if (bufferSemanal < 0 && Math.abs(bufferSemanal) > extra) {
+                                                    mensajeEl.textContent = `Te podes ir, pero debés tiempo`;
+                                                } else {
+                                                    // Mensaje de éxito con tiempo extra
+                                                    if (extra > 0) {
+                                                        mensajeEl.textContent = `Te podes ir (+${horasATexto(extra)})`;
+                                                    } else {
+                                                        mensajeEl.textContent = `Te podes ir`;
+                                                    }
+                                                }
+                                            } else {
+                                                // --- B) FALTA PARA EL OBJETIVO DE HOY ---
+                                                const faltanteTexto = `Faltan ${horasATexto(faltante)}`;
+
+                                                // LÓGICA DEL BUFFER RECUPERADA
+                                                // Si tienes horas a favor (buffer > 0) y cubren lo que te falta hoy:
+                                                if (bufferSemanal >= faltante) {
+                                                    mensajeEl.textContent = `${faltanteTexto}, pero te podés ir`;
+                                                } else {
+                                                    mensajeEl.textContent = faltanteTexto;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         } else {
-                            // SIN REGISTRO
+                            // SIN REGISTRO HOY
                             if (progressEl) { progressEl.style.width = '0%'; setProgressBarColor(progressEl, 'blue'); }
 
                             if (esDiaDeDescanso) {
@@ -4699,27 +4776,51 @@
                                 if (mensajeEl) mensajeEl.textContent = 'Día libre';
                             } else {
                                 if (statsEl) statsEl.innerHTML = `<div style="font-size: 1.8rem;">😴 Sin actividad</div>`;
-                                if (mensajeEl) mensajeEl.textContent = '...';
+                                if (mensajeEl) {
+                                    if (horasDiarias === 0) mensajeEl.style.display = 'none';
+                                    else { mensajeEl.textContent = '...'; mensajeEl.style.display = 'block'; }
+                                }
                             }
                         }
 
-                        // Lógica Hint Salida Estimada
+                        // --- LÓGICA DE SALIDA ESTIMADA ---
                         if (hintEl) {
-                            if (regHoy && regHoy.entrada && !regHoy.salida && objetivoDiario > 0 && !['00:00', '11:11', '22:22'].includes(regHoy.entrada)) {
-                                const [hE, mE] = regHoy.entrada.split(':').map(Number);
-                                let minTotal = (hE * 60) + mE + (objetivoDiario * 60);
-                                if (regHoy.tiempoFuera) {
-                                    const [hF, mF] = regHoy.tiempoFuera.split(':').map(Number);
-                                    minTotal += (hF * 60) + mF;
-                                }
-                                // Sumar timer live si existe
-                                const pId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
-                                const start = localStorage.getItem(`breakStartTime_${pId}`);
-                                if (start) minTotal += Math.floor((Date.now() - parseInt(start)) / 60000);
+                            let mostrarEstimacion = false;
+                            let horaSalida = '';
 
-                                let hS = Math.floor(minTotal / 60) % 24;
-                                let mS = Math.round(minTotal % 60);
-                                hintEl.innerHTML = `Salida estimada: <strong>${String(hS).padStart(2, '0')}:${String(mS).padStart(2, '0')}</strong>`;
+                            if (regHoy && regHoy.entrada && !regHoy.salida && objetivoDiario > 0) {
+                                const esEspecial = (regHoy.entrada === '00:00' || regHoy.entrada === '11:11' || regHoy.entrada === '22:22');
+
+                                if (!esEspecial) {
+                                    const [hE, mE] = regHoy.entrada.split(':').map(Number);
+                                    let minutosTotal = (hE * 60) + mE + (objetivoDiario * 60);
+
+                                    if (regHoy.tiempoFuera) {
+                                        const [hF, mF] = regHoy.tiempoFuera.split(':').map(Number);
+                                        minutosTotal += (hF * 60) + mF;
+                                    }
+
+                                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                                    const storageKey = `breakStartTime_${perfilId}`;
+                                    const inicioBreak = localStorage.getItem(storageKey);
+
+                                    if (inicioBreak) {
+                                        const ahora = Date.now();
+                                        const minutosEnCurso = Math.floor((ahora - parseInt(inicioBreak)) / 60000);
+                                        if (minutosEnCurso > 0) minutosTotal += minutosEnCurso;
+                                    }
+
+                                    let hS = Math.floor(minutosTotal / 60);
+                                    const mS = Math.round(minutosTotal % 60);
+                                    if (hS >= 24) hS = hS % 24;
+
+                                    horaSalida = `${String(hS).padStart(2, '0')}:${String(mS).padStart(2, '0')}`;
+                                    mostrarEstimacion = true;
+                                }
+                            }
+
+                            if (mostrarEstimacion) {
+                                hintEl.innerHTML = `Salida estimada: <strong>${horaSalida}</strong>`;
                             } else {
                                 hintEl.textContent = 'Toca para ver la Semana';
                             }
@@ -6198,8 +6299,6 @@ Generado por Sistema Horarios
 <!--// ====================================================================
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.63
     // ====================================================================
-    1)
-
-
+    1) 
 
     -->
