@@ -1509,7 +1509,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.61</span>
+                <span class="version-text">v6.62</span>
             </h3>
 
             <div class="form-group">
@@ -3125,9 +3125,9 @@
                 function guardarConfig() {
                     const vd = parseFloat($('config-horas-diarias').value);
 
-                    // Leer checkboxes
+                    // Leer checkboxes y ordenar para comparar bien
                     const checkboxes = document.querySelectorAll('input[name="dia-habil"]:checked');
-                    const nuevosDias = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                    const nuevosDias = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a, b) => a - b);
 
                     if (nuevosDias.length === 0) {
                         UILogic.mostrarToast('Selecciona al menos un día', 'error');
@@ -3137,6 +3137,20 @@
                         UILogic.mostrarToast('Horas inválidas', 'error');
                         return;
                     }
+
+                    // --- NUEVA VALIDACIÓN DE CAMBIOS (Array vs Array) ---
+                    // Ordenamos la configuración actual para que la comparación sea justa
+                    const diasActuales = [...diasHabiles].sort((a, b) => a - b);
+
+                    // Convertimos a texto para comparar contenido real
+                    const sonDiasIguales = JSON.stringify(diasActuales) === JSON.stringify(nuevosDias);
+
+                    if (sonDiasIguales && vd === horasDiarias) {
+                        UILogic.mostrarToast('Sin cambios', 'info');
+                        UILogic.cerrarConfig();
+                        return;
+                    }
+                    // ---------------------------------------------------
 
                     // Guardar en memoria
                     diasHabiles = nuevosDias;
@@ -3521,7 +3535,7 @@
                     }
                     return buffer;
                 }
-                
+
                 function aplicarFiltros() {
                     const desde = $('filtro-fecha-desde').value;
                     const hasta = $('filtro-fecha-hasta').value;
@@ -5972,6 +5986,11 @@ Generado por Sistema Horarios
                     const registrosCargados = perfilActual.registros || [];
                     D.registros().splice(0, D.registros().length, ...registrosCargados);
 
+                    // --- SOLUCIÓN: REINICIAR HISTORIAL AL CARGAR ---
+                    HistoryManager.clear(); // Limpiamos cualquier "basura" previa
+                    HistoryManager.saveState(D.registros()); // Este se convierte en el estado "Cero"
+                    HistoryManager.updateButtons(); // Ahora los botones evaluarán correctamente
+
                     // 3. INTERFAZ GRÁFICA (TEMA) - Versión Segura
                     if (temaOscuro) {
                         document.body.classList.add('dark-mode');
@@ -6161,7 +6180,7 @@ Generado por Sistema Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.61
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.62
     // ====================================================================
     1) Se agrega linea separadora de semanas en el historico
 
