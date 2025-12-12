@@ -1052,6 +1052,14 @@
             opacity: 0;
             transform: translateY(-10px);
         }
+
+        .separador-semana {
+            height: 1px;
+            background: var(--text-muted);
+            margin: 1rem auto;
+            opacity: 0.3;
+            width: 80%;
+        }
     </style>
 </head>
 
@@ -1455,7 +1463,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.60</span>
+                <span class="version-text">v6.61</span>
             </h3>
 
             <div class="form-group">
@@ -3794,6 +3802,15 @@
                     return { inicio, fin };
                 }
 
+                function obtenerLunesSemana(fecha) {
+                    const date = new Date(fecha.replace(/-/g, '/') + ' 00:00:00');
+                    const dia = date.getDay();
+                    const offset = dia === 0 ? -6 : 1 - dia;
+                    const lunes = new Date(date);
+                    lunes.setDate(date.getDate() + offset);
+                    return lunes.toISOString().split('T')[0];
+                }
+
                 function horasATexto(t) {
                     const totalHoras = Math.max(0, t);
 
@@ -4150,16 +4167,39 @@
                         }
 
                         // --- BUCLE PRINCIPAL DE ITEMS ---
+                        let semanaAnterior = null;
+
                         grupos.forEach(grupo => {
                             if (grupo.tipo === 'grupo') {
-                                // CAMBIO CLAVE 3: ¡AQUÍ ESTABA EL ERROR! 
-                                // Asegúrate de que 'idNuevo' esté aquí como 4to parámetro
+                                const primerRegistro = grupo.registros[grupo.registros.length - 1]; // El más antiguo del grupo
+                                const semanaActual = obtenerLunesSemana(primerRegistro.fecha);
+
+                                // Si cambió la semana, insertar separador
+                                if (semanaAnterior && semanaActual !== semanaAnterior) {
+                                    const separador = document.createElement('div');
+                                    separador.className = 'separador-semana';
+                                    detalleMesActual.appendChild(separador);
+                                }
+
                                 const container = crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos, idNuevo);
                                 detalleMesActual.appendChild(container);
+
+                                semanaAnterior = semanaActual;
                             } else {
                                 const r = grupo.registros[0];
+                                const semanaActual = obtenerLunesSemana(r.fecha);
+
+                                // Si cambió la semana, insertar separador
+                                if (semanaAnterior && semanaActual !== semanaAnterior) {
+                                    const separador = document.createElement('div');
+                                    separador.className = 'separador-semana';
+                                    detalleMesActual.appendChild(separador);
+                                }
+
                                 const item = crearItemRegistroIndividual(r, horasDiarias, idNuevo);
                                 detalleMesActual.appendChild(item);
+
+                                semanaAnterior = semanaActual;
                             }
                         });
 
@@ -6101,7 +6141,7 @@ Generado por Sistema Horarios
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then(registration => {
-                        console.log('✅ SW registrado:', registration.scope);
+                        console.log('SW registrado:', registration.scope);
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
@@ -6121,10 +6161,8 @@ Generado por Sistema Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.60
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.61
     // ====================================================================
-    1) Se modifica el funcionamiento del boton tiempo fuera, redondea para arriba o abajo con 30
-    segundos en el medio
-
+    1) Se agrega linea separadora de semanas en el historico
 
     -->
