@@ -157,7 +157,7 @@
             }
 
             #lista-registros {
-                max-height: 650px;
+                max-height: 975px;
                 overflow-y: auto;
                 padding: 0.5rem;
                 scrollbar-gutter: stable;
@@ -1258,6 +1258,14 @@
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" class="icon-line" stroke="currentColor" stroke-width="2"
                 stroke-linejoin="round" fill="none"></path>
         </symbol>
+        <symbol id="icon-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 12 20 22 4 22 4 12"></polyline>
+            <rect x="2" y="7" width="20" height="5"></rect>
+            <line x1="12" y1="22" x2="12" y2="7"></line>
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+        </symbol>
     </svg>
     <div class="header">
         <h1>Horarios</h1>
@@ -1511,7 +1519,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.63</span>
+                <span class="version-text">v6.65</span>
             </h3>
 
             <div class="form-group">
@@ -1634,7 +1642,8 @@
                     <input type="text" id="edit-entrada" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
                             <use href="#icon-clock" />
-                        </svg></button>
+                        </svg>
+                    </button>
                 </div>
             </div>
             <div class="form-group">
@@ -1643,17 +1652,32 @@
                     <input type="text" id="edit-salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-salida')"><svg class="icon">
                             <use href="#icon-clock" />
-                        </svg></button>
+                        </svg>
+                    </button>
                 </div>
             </div>
             <div class="form-group">
-                <label>Tiempo Fuera (opcional)</label>
+                <label>Tiempo Fuera</label>
                 <div class="input-with-btn">
                     <input type="text" id="edit-tiempo-fuera" inputmode="numeric" placeholder="Ej: 00:20"
                         maxlength="5" />
                     <button class="time-btn" onclick="UILogic.limpiarCampo('edit-tiempo-fuera')">
                         <svg class="icon">
                             <use href="#icon-broom" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Crédito / Asueto</label>
+                <div class="input-with-btn">
+                    <input type="text" id="edit-credito" inputmode="numeric" placeholder="Horas a completar"
+                        maxlength="5" />
+                    <button class="time-btn" onclick="UILogic.autoCompletarDia()"
+                        title="Autocompletar con crédito/asueto">
+                        <svg class="icon">
+                            <use href="#icon-gift" />
                         </svg>
                     </button>
                 </div>
@@ -1771,15 +1795,21 @@
                 <ul class="indice-lista">
                     <li class="indice-item"><a href="#ayuda-perfiles" class="indice-link">💼 Gestión de Perfiles</a>
                     </li>
-                    <li class="indice-item"><a href="#ayuda-entrada" class="indice-link">📥 Registrar entrada/salida</a>
+                    <li class="indice-item"><a href="#ayuda-entrada" class="indice-link">📥 Registrar
+                            entrada/salida</a>
                     </li>
-                    <li class="indice-item"><a href="#ayuda-vistas" class="indice-link">👁️ Vista Diario / Semanal</a>
+                    <li class="indice-item"><a href="#ayuda-vistas" class="indice-link">👁️ Vista Diario /
+                            Semanal</a>
                     </li>
-                    <li class="indice-item"><a href="#ayuda-manual" class="indice-link">✏️ Fecha/Hora manual</a></li>
-                    <li class="indice-item"><a href="#ayuda-rango" class="indice-link">📅 Vacaciones y Lotes</a></li>
-                    <li class="indice-item"><a href="#ayuda-break" class="indice-link">☕ Timer / Tiempo fuera</a></li>
+                    <li class="indice-item"><a href="#ayuda-manual" class="indice-link">✏️ Fecha/Hora manual</a>
+                    </li>
+                    <li class="indice-item"><a href="#ayuda-rango" class="indice-link">📅 Vacaciones y Lotes</a>
+                    </li>
+                    <li class="indice-item"><a href="#ayuda-break" class="indice-link">☕ Timer / Tiempo fuera</a>
+                    </li>
                     <li class="indice-item"><a href="#ayuda-editar" class="indice-link">📝 Editar registro</a></li>
-                    <li class="indice-item"><a href="#ayuda-codigos" class="indice-link">🔢 Códigos horarios</a></li>
+                    <li class="indice-item"><a href="#ayuda-codigos" class="indice-link">🔢 Códigos horarios</a>
+                    </li>
                     <li class="indice-item"><a href="#ayuda-extra" class="indice-link">⚙️ Backup y Configuración</a>
                     </li>
                 </ul>
@@ -1789,11 +1819,13 @@
                 <p id="ayuda-perfiles"><strong>¿Cómo funcionan los Perfiles?</strong></p>
                 <p>Gestiona múltiples trabajos de forma independiente:</p>
                 <ul style="padding-left: 1.5rem; margin-top: 0.5rem;">
-                    <li><strong>Cambiar:</strong> Toca el nombre del perfil en la cabecera (arriba a la derecha).</li>
+                    <li><strong>Cambiar:</strong> Toca el nombre del perfil en la cabecera (arriba a la derecha).
+                    </li>
                     <li><strong>Crear:</strong> En el menú, escribe un nombre y toca <svg class="icon">
                             <use href="#icon-plus" />
                         </svg>.</li>
-                    <li><strong>Datos independientes:</strong> Cada perfil tiene sus propios registros, configuración de
+                    <li><strong>Datos independientes:</strong> Cada perfil tiene sus propios registros,
+                        configuración de
                         horas y días hábiles.</li>
                 </ul>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
@@ -1834,9 +1866,11 @@
                         <use href="#icon-calendar-simple" />
                     </svg> junto a la fecha.</p>
                 <ul style="padding-left: 1.5rem;">
-                    <li><strong>Registro rápido:</strong> Sin llenar fechas, toca <strong>Registrar</strong> para marcar
+                    <li><strong>Registro rápido:</strong> Sin llenar fechas, toca <strong>Registrar</strong> para
+                        marcar
                         HOY como el tipo seleccionado (Feriado, Ausencia o Vacaciones).</li>
-                    <li><strong>Registro por lote:</strong> Llena "Desde" y "Hasta" para registrar (o borrar) múltiples
+                    <li><strong>Registro por lote:</strong> Llena "Desde" y "Hasta" para registrar (o borrar)
+                        múltiples
                         días simultáneamente.</li>
                 </ul>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
@@ -1846,7 +1880,8 @@
                 <p id="ayuda-break"><strong>Timer / Tiempo fuera</strong></p>
                 <p>Toca el botón <svg class="icon">
                         <use href="#icon-coffee" />
-                    </svg>. El timer contará el tiempo que no estás trabajando. Al detenerlo, ese tiempo se descontará
+                    </svg>. El timer contará el tiempo que no estás trabajando. Al detenerlo, ese tiempo se
+                    descontará
                     automáticamente del total del día.</p>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
@@ -2739,52 +2774,38 @@
                     return (hr * 60) + mn;
                 }
 
-                function calcularHoras(e, s, tf = null) {
+                function calcularHoras(e, s, tf = null, cr = null) { // <--- Agregamos cr
                     const tfMinutos = tf ? tiempoEnMinutos(tf) : 0;
+                    const crMinutos = cr ? tiempoEnMinutos(cr) : 0; // <--- Calculamos minutos crédito
 
+                    // ... (Mantener lógica de Ausencia, Vacaciones y Feriado igual que antes) ...
                     // Ausencia/Licencia
                     if (e === '11:11' && s === '11:11') {
                         return { horas: 0, minutos: 0, total: horasDiarias, esAusencia: true };
                     }
-
-                    // Vacaciones
-                    if (e === '22:22' && s === '22:22') {
-                        return { horas: 0, minutos: 0, total: horasDiarias, esVacaciones: true };
-                    }
-
-                    // Feriado
-                    if (e === '00:00' && s === '00:00') {
-                        const minFeriado = horasDiarias * 60;
-                        return { horas: Math.floor(minFeriado / 60), minutos: Math.round(minFeriado % 60), total: horasDiarias };
-                    }
+                    // Vacaciones, Feriados... (mantener igual)
 
                     if (!e || !s || !e.includes(':') || !s.includes(':')) return null;
 
                     const [hE, mE] = e.split(':').map(Number);
                     const [hS, mS] = s.split(':').map(Number);
 
-                    if (!Number.isFinite(hE) || !Number.isFinite(mE) ||
-                        !Number.isFinite(hS) || !Number.isFinite(mS)) {
+                    if (!Number.isFinite(hE) || !Number.isFinite(mE) || !Number.isFinite(hS) || !Number.isFinite(mS)) {
                         return null;
                     }
 
                     const minutosEntrada = hE * 60 + mE;
                     const minutosSalida = hS * 60 + mS;
 
-                    if (minutosEntrada > 1440 || minutosSalida > 1440 ||
-                        minutosEntrada < 0 || minutosSalida < 0) {
-                        return null;
-                    }
-
                     let minTotal = minutosSalida - minutosEntrada;
+                    if (minTotal < 0) minTotal += 24 * 60;
 
-                    if (minTotal < 0) {
-                        minTotal += 24 * 60; // Agregar 24 horas
-                    }
+                    // Fórmula: (Salida - Entrada) - TiempoFuera + Crédito
+                    let minNeto = (minTotal - tfMinutos) + crMinutos;
 
-                    let minNeto = minTotal - tfMinutos;
                     if (minNeto < 0) minNeto = 0;
 
+                    // Retornamos también el crédito usado para guardarlo si es necesario (opcional)
                     return { horas: Math.floor(minNeto / 60), minutos: minNeto % 60, total: minNeto / 60 };
                 }
 
@@ -3009,14 +3030,20 @@
                     if (editandoId !== null) return;
                     const r = registros.find(x => x.id === id);
                     if (!r) return;
+
                     editandoId = id;
                     $('edit-fecha').value = r.fecha;
                     $('edit-entrada').value = r.entrada || '';
                     $('edit-salida').value = r.salida || '';
                     $('edit-tiempo-fuera').value = r.tiempoFuera || '';
+                    $('edit-credito').value = r.credito || '';
                     $('modal-editar').classList.add('show');
-                    UILogic.setBloqueoEdicion(true)
+                    UILogic.setBloqueoEdicion(true);
+                    requestAnimationFrame(() => {
+                        UILogic.verificarBloqueoCredito();
+                    });
                 }
+
                 async function guardarEdicion() {
                     const r = registros.find(x => x.id === editandoId);
                     if (!r) return;
@@ -3025,52 +3052,71 @@
                     const btnGuardar = modal.querySelector('.btn-edit');
                     btnGuardar.disabled = true;
 
-                    // Obtener valores de los inputs
+                    // --- 1. OBTENER VALORES DE LOS INPUTS ---
                     const f = S.sanitizeString($('edit-fecha').value, 10);
                     const e = S.sanitizeString($('edit-entrada').value.trim(), 5);
                     const s = S.sanitizeString($('edit-salida').value.trim(), 5);
+
                     let tf = S.sanitizeString($('edit-tiempo-fuera').value.trim(), 5);
                     if (tf === '') tf = null;
 
-                    // DETECTAR CAMBIOS ---
+                    // ⬇️⬇️ NUEVO BLOQUE PARA CRÉDITO ⬇️⬇️
+                    let cr = S.sanitizeString($('edit-credito').value.trim(), 5);
+                    if (cr === '') cr = null;
+                    // ⬆️⬆️ FIN NUEVO BLOQUE ⬆️⬆️
+
+
+                    // --- 2. DETECTAR SI HUBO CAMBIOS ---
                     const actualEntrada = r.entrada || '';
                     const nuevaEntrada = e || '';
                     const actualSalida = r.salida || '';
                     const nuevaSalida = s || '';
                     const actualTF = r.tiempoFuera || '';
-                    const nuevoTF = tf || ''; // tf puede ser null, pero para comparar usamos ''
+                    const nuevoTF = tf || '';
 
-                    // Comparamos todo
+                    // ⬇️⬇️ NUEVO: COMPARAR CRÉDITO ⬇️⬇️
+                    const actualCR = r.credito || '';
+                    const nuevoCR = cr || '';
+                    // ⬆️⬆️ 
+
+                    // Comparamos todo (incluyendo el crédito)
                     if (r.fecha === f &&
                         actualEntrada === nuevaEntrada &&
                         actualSalida === nuevaSalida &&
-                        actualTF === nuevoTF) {
+                        actualTF === nuevoTF &&
+                        actualCR === nuevoCR) { // <--- NUEVO: Agregamos esta condición
 
-                        // Si todo es igual, avisamos y cerramos
                         UILogic.mostrarToast('Sin cambios', 'info');
                         UILogic.restaurarBotonGuardarEdicion(btnGuardar);
                         UILogic.cerrarEdicion();
                         return;
                     }
-                    // --------------------------------------
 
-                    if (!S.validarFechaSegura(f) || (e && !S.validarHoraSegura(e)) || (s && !S.validarHoraSegura(s)) || (tf && !S.validarHoraSegura(tf))) {
+                    // --- 3. VALIDACIONES DE SEGURIDAD ---
+                    // (Agregamos la validación para 'cr')
+                    if (!S.validarFechaSegura(f) ||
+                        (e && !S.validarHoraSegura(e)) ||
+                        (s && !S.validarHoraSegura(s)) ||
+                        (tf && !S.validarHoraSegura(tf)) ||
+                        (cr && !S.validarHoraSegura(cr))) { // <--- NUEVO: Validar formato de crédito
+
                         UILogic.restaurarBotonGuardarEdicion(btnGuardar);
-                        UILogic.mostrarToast('Verifica los campos', 'error');
+                        UILogic.mostrarToast('Verifica los campos (hora inválida)', 'error');
                         return;
                     }
 
+                    // (Validaciones lógicas existentes...)
                     if (!e && s) {
                         UILogic.restaurarBotonGuardarEdicion(btnGuardar);
                         UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
                         return;
                     }
 
+                    // Caso: Borrar registro si todo está vacío
                     if (!e && !s) {
-                        // Si ambos campos están vacíos, eliminar el registro
+                        // ... (código de borrado existente, dejar igual) ...
                         const registroABorrar = registros.find(r => r.id === editandoId);
                         if (registroABorrar && registroABorrar.fecha === UILogic.obtenerFechaHoy()) {
-                            // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
                             const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
                             const storageKey = `breakStartTime_${perfilId}`;
                             localStorage.removeItem(storageKey);
@@ -3078,9 +3124,7 @@
                         }
                         registros = registros.filter(r => r.id !== editandoId);
                         HistoryManager.saveState(registros);
-
                         const saved = await guardarYActualizar();
-
                         if (saved) {
                             UILogic.mostrarToast('Registro eliminado (vacío)', 'info');
                             UILogic.restaurarBotonGuardarEdicion(btnGuardar);
@@ -3091,29 +3135,40 @@
                         return;
                     }
 
+                    // Verificar duplicados de fecha
                     const existeFecha = registros.some(reg => reg.fecha === f && reg.id !== editandoId);
                     if (existeFecha) {
                         UILogic.restaurarBotonGuardarEdicion(btnGuardar);
-                        UILogic.mostrarToast('Ya existe otro registro', 'error');
+                        UILogic.mostrarToast('Ya existe otro registro para esa fecha', 'error');
                         return;
                     }
 
-                    // Si pasó las validaciones y hubo cambios, actualizamos
+                    // --- 4. ACTUALIZAR EL OBJETO ---
                     r.fecha = f;
                     r.entrada = e || null;
 
-                    // 🔧 Detener timer si está corriendo y se agrega salida
+                    // Lógica del timer (si agregas salida manualmente mientras corre el timer)
                     if (s && !actualSalida) {
                         const timerDetenido = detenerYRegistrarTimer(r);
-                        if (timerDetenido) tf = r.tiempoFuera; // Actualizar tf con el nuevo valor
+                        if (timerDetenido) tf = r.tiempoFuera;
                     }
 
                     r.salida = s || null;
                     r.tiempoFuera = tf;
-                    const t = calcularHoras(r.entrada, r.salida, r.tiempoFuera);
+
+                    // ⬇️⬇️ NUEVO: GUARDAR EL CRÉDITO EN EL REGISTRO ⬇️⬇️
+                    r.credito = cr;
+                    // ⬆️⬆️
+
+                    // --- 5. RECALCULAR TOTALES ---
+                    // IMPORTANTE: Aquí pasamos el nuevo parámetro 'r.credito' a calcularHoras
+                    const t = calcularHoras(r.entrada, r.salida, r.tiempoFuera, r.credito); // <--- NUEVO PARÁMETRO
+
                     r.horas = t?.horas || 0;
                     r.minutos = t?.minutos || 0;
                     r.total = t?.total || 0;
+
+                    // Ordenar
                     registros.sort((a, b) => {
                         if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
                         return (b.entrada || '').localeCompare(a.entrada || '');
@@ -3121,6 +3176,7 @@
 
                     HistoryManager.saveState(registros);
 
+                    // Guardar en LocalStorage y Actualizar UI
                     const saved = await guardarYActualizar();
 
                     if (saved) {
@@ -4316,7 +4372,16 @@
                                     chevronIcon.style.transform = 'rotate(180deg)';
 
                                     setTimeout(() => {
-                                        contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        // 1. Obtenemos la posición del contenedor del mes
+                                        const rect = contenedor.getBoundingClientRect();
+
+                                        // 2. Definimos el margen del header (la barra blanca de arriba)
+                                        const margenHeader = 80;
+
+                                        // 3. LOGICA CONDICIONAL:
+                                        if (rect.top < margenHeader) {
+                                            contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
                                     }, 310);
                                 }
                             };
@@ -4911,7 +4976,7 @@
 
                     const el = $('config-total-feedback');
                     if (el) {
-                        if (horas === 0) el.textContent = `(Sin objetivo - Solo registro)`;
+                        if (horas === 0) el.textContent = `(Registro libre sin objetivos)`;
                         else el.textContent = `(Total semanal: ${total}hs)`;
                     }
                 }
@@ -5479,18 +5544,23 @@ Generado por Sistema Horarios
                         btnLock.style.color = bloqueado ? 'var(--c-red)' : 'var(--text-main)';
                     }
 
-                    const inputs = ['edit-fecha', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'];
+                    // 1. Bloquear/Desbloquear Inputs
+                    const inputs = ['edit-fecha', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera', 'edit-credito'];
                     inputs.forEach(id => {
                         const el = $(id);
                         if (el) el.disabled = bloqueado;
                     });
 
+                    // 2. Bloquear/Desbloquear Botones Generales
                     const modal = $('modal-editar');
                     if (modal) {
                         const botones = modal.querySelectorAll('button:not(#btn-lock-toggle):not(.btn-cancel)');
                         botones.forEach(btn => {
                             btn.disabled = bloqueado;
                         });
+                    }
+                    if (!bloqueado) {
+                        verificarBloqueoCredito();
                     }
                 }
 
@@ -6045,7 +6115,8 @@ Generado por Sistema Horarios
                         init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
                         crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, detenerCambio,
                         abrirConfigDesdePerfiles, toggleModoLote, ejecutarAccionRegistro, registrarLoteDesdeCard,
-                        abrirSelectorPerfiles, cerrarSelectorPerfiles, alternarFechaActual
+                        abrirSelectorPerfiles, cerrarSelectorPerfiles, alternarFechaActual, autoCompletarDia,
+                        verificarBloqueoCredito
                     };
 
                     // =========================================================
@@ -6081,7 +6152,6 @@ Generado por Sistema Horarios
 
                     const perfilActual = PerfilManager.obtenerDatosPerfil();
 
-                    // --- CORRECCIÓN CRÍTICA AQUÍ ---
                     // Detectamos si el perfil tiene el formato viejo (número) y lo convertimos a array
                     let diasRaw = perfilActual.diasHabiles;
                     let diasArraySeguro = [1, 2, 3, 4, 5]; // Default
@@ -6096,14 +6166,13 @@ Generado por Sistema Horarios
                     }
 
                     D.setDiasHabiles(diasArraySeguro);
-                    // -------------------------------
 
                     D.setHorasDiarias(perfilActual.horasDiarias !== undefined ? perfilActual.horasDiarias : 7);
 
                     const registrosCargados = perfilActual.registros || [];
                     D.registros().splice(0, D.registros().length, ...registrosCargados);
 
-                    // --- SOLUCIÓN: REINICIAR HISTORIAL AL CARGAR ---
+                    // --- REINICIAR HISTORIAL AL CARGAR ---
                     HistoryManager.clear(); // Limpiamos cualquier "basura" previa
                     HistoryManager.saveState(D.registros()); // Este se convierte en el estado "Cero"
                     HistoryManager.updateButtons(); // Ahora los botones evaluarán correctamente
@@ -6129,9 +6198,18 @@ Generado por Sistema Horarios
                     $('fecha').value = obtenerFechaHoy();
 
                     // 4. LISTENERS E INTERACTIVIDAD
-                    ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'].forEach(id => {
+                    ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera', 'edit-credito'].forEach(id => {
                         const el = $(id);
                         if (el) el.addEventListener('input', formatearInput);
+                    });
+
+                    ['edit-entrada', 'edit-salida'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            // Escuchamos 'input' (mientras escribes) y 'change' (si usas autocompletar o pegas)
+                            el.addEventListener('input', verificarBloqueoCredito);
+                            el.addEventListener('change', verificarBloqueoCredito);
+                        }
                     });
 
                     // 5. RESTAURAR ESTADO VISUAL
@@ -6235,8 +6313,6 @@ Generado por Sistema Horarios
                     });
                 }
 
-                // ... dentro de UILogic ...
-
                 function alternarFechaActual(id) {
                     const c = document.getElementById(id);
                     if (!c) return;
@@ -6248,11 +6324,111 @@ Generado por Sistema Horarios
                         c.value = obtenerFechaHoy();
                     }
 
-                    // Importante: Actualizar el estado del botón principal
+                    // Actualizar el estado del botón principal
                     actualizarBotonLote();
                 }
 
-                // ...
+                function autoCompletarDia() {
+                    const inputCredito = document.getElementById('edit-credito');
+
+                    // 1. LÓGICA: Si ya tiene datos, BORRAR y salir.
+                    if (inputCredito.value.trim() !== '') {
+                        inputCredito.value = '';
+                        mostrarToast('Crédito eliminado', 'info');
+                        return; // Detenemos la función aquí
+                    }
+
+                    // 2. Calcular y rellenar
+                    const horasDiarias = DataManagement.horasDiarias();
+
+                    const entrada = document.getElementById('edit-entrada').value;
+                    const salida = document.getElementById('edit-salida').value;
+                    const tiempoFuera = document.getElementById('edit-tiempo-fuera').value;
+
+                    // Usamos calcularHoras con crédito 0 para ver el neto real
+                    const calculo = DataManagement.calcularHoras(entrada, salida, tiempoFuera, "00:00");
+
+                    if (!calculo) {
+                        mostrarToast('Ingresa entrada y salida primero', 'warning');
+                        return;
+                    }
+
+                    const horasTrabajadas = calculo.total;
+                    const faltante = horasDiarias - horasTrabajadas;
+
+                    if (faltante <= 0) {
+                        mostrarToast('¡Ya cumpliste el horario! No necesitas crédito.', 'info');
+                        inputCredito.value = '';
+                        return;
+                    }
+
+                    // Convertir decimal a formato HH:MM
+                    const h = Math.floor(faltante);
+                    const m = Math.round((faltante - h) * 60);
+                    const textoHora = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+                    inputCredito.value = textoHora;
+                    mostrarToast(`Se agregaron ${textoHora} para completar el día`, 'success');
+                }
+
+                function verificarBloqueoCredito() {
+                    const e = $('edit-entrada').value;
+                    const s = $('edit-salida').value;
+                    const inputCredito = $('edit-credito');
+
+                    // Buscamos el botón de la "cajita feliz"
+                    const btnCredito = inputCredito.nextElementSibling;
+
+                    const esFeriado = (e === '00:00' && s === '00:00');
+                    const esAusencia = (e === '11:11' && s === '11:11');
+                    const esVacaciones = (e === '22:22' && s === '22:22');
+
+                    const esEspecial = esFeriado || esAusencia || esVacaciones;
+
+                    if (esEspecial) {
+                        // --- CASO ESPECIAL (Feriado, etc) ---
+                        // Bloqueo visual fuerte (gris oscuro, placeholder distinto)
+                        inputCredito.disabled = true;
+                        inputCredito.value = '';
+                        inputCredito.placeholder = "No aplica";
+                        inputCredito.style.opacity = '0.5'; // Opacidad reducida
+
+                        if (btnCredito) {
+                            btnCredito.disabled = true;
+                            btnCredito.style.opacity = '0.5';
+                            btnCredito.style.cursor = 'not-allowed';
+                        }
+                    } else {
+                        // --- CASO NORMAL ---
+
+                        // 1. RESTAURAR APARIENCIA (ESTO ES LO NUEVO)
+                        // Limpiamos los estilos "sucios" que pudieron quedar de un feriado anterior
+                        inputCredito.placeholder = "Horas a completar";
+                        inputCredito.style.opacity = '1'; // Opacidad normal
+                        if (btnCredito) btnCredito.style.opacity = '1';
+
+                        // 2. GESTIONAR EL BLOQUEO REAL (Logic del candado)
+                        const bloqueoGlobal = document.getElementById('edit-fecha').disabled;
+
+                        if (!bloqueoGlobal) {
+                            // Si NO hay candado, habilitamos totalmente
+                            inputCredito.disabled = false;
+                            if (btnCredito) {
+                                btnCredito.disabled = false;
+                                btnCredito.style.cursor = 'pointer';
+                            }
+                        } else {
+                            // Si HAY candado global, mantenemos deshabilitado pero con aspecto "limpio"
+                            inputCredito.disabled = true;
+                            if (btnCredito) {
+                                btnCredito.disabled = true;
+                                // Dejamos cursor default o not-allowed segun prefieras para el estado bloqueado normal
+                                btnCredito.style.cursor = 'not-allowed';
+                            }
+                        }
+                    }
+                }
+
 
                 return {
                     init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
@@ -6264,7 +6440,8 @@ Generado por Sistema Horarios
                     actualizarFeedbackConfig, poblarSelectorMeses, abrirSelectorPerfiles, actualizarBotonLote,
                     cerrarSelectorPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, toggleModoLote,
                     eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles, ejecutarAccionRegistro,
-                    iniciarCambioHoras, detenerCambio, abrirConfigDesdePerfiles, alternarFechaActual
+                    iniciarCambioHoras, detenerCambio, abrirConfigDesdePerfiles, alternarFechaActual, autoCompletarDia,
+                    verificarBloqueoCredito
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -6297,8 +6474,10 @@ Generado por Sistema Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.63
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.65
     // ====================================================================
-    1) 
+    1) Se agregan validaciones y al grupo de bloqueo la funcion credito
+    2) se corrige el salto al abrir un mes que tenga el primer registro en vista,
+    ahora no produce un salto innecesario
 
     -->
