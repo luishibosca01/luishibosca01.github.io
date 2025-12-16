@@ -2235,12 +2235,15 @@
                         if (typeof r.tiempoFuera !== 'string' || !REGEX_PATTERNS.HORA.test(r.tiempoFuera)) return false;
                     }
 
+                    if (r.credito !== null && r.credito !== undefined && r.credito !== '') {
+                        if (typeof r.credito !== 'string' || !REGEX_PATTERNS.HORA.test(r.credito)) return false;
+                    }
+
                     if (!Number.isFinite(r.horas) || r.horas < 0 || r.horas > 24) return false;
                     if (!Number.isFinite(r.minutos) || r.minutos < 0 || r.minutos > 59) return false;
                     if (!Number.isFinite(r.total) || r.total < 0 || r.total > 24) return false;
 
-                    const propiedadesPermitidas = ['id', 'fecha', 'entrada', 'salida', 'tiempoFuera', 'horas', 'minutos', 'total'];
-                    const propiedadesActuales = Object.keys(r);
+                    const propiedadesPermitidas = ['id', 'fecha', 'entrada', 'salida', 'tiempoFuera', 'horas', 'minutos', 'total', 'credito']; const propiedadesActuales = Object.keys(r);
                     const tienePropiedadesSospechosas = propiedadesActuales.some(prop => !propiedadesPermitidas.includes(prop));
                     if (tienePropiedadesSospechosas) return false;
 
@@ -3454,7 +3457,8 @@
                                         tiempoFuera: validarHora(r.tiempoFuera),
                                         horas: Math.max(0, Math.min(24, parseFloat(r.horas) || 0)),
                                         minutos: Math.max(0, Math.min(59, parseFloat(r.minutos) || 0)),
-                                        total: Math.max(0, Math.min(24, parseFloat(r.total) || 0))
+                                        total: Math.max(0, Math.min(24, parseFloat(r.total) || 0)),
+                                        credito: validarHora(r.credito),
                                     };
                                 });
 
@@ -3465,7 +3469,7 @@
 
                             // Recalcular horas para asegurar consistencia
                             registrosImportados.forEach(r => {
-                                const t = calcularHoras(r.entrada, r.salida, r.tiempoFuera || null);
+                                const t = calcularHoras(r.entrada, r.salida, r.tiempoFuera || null, r.credito || null);
                                 r.horas = t?.horas || 0;
                                 r.minutos = t?.minutos || 0;
                                 r.total = t?.total || 0;
@@ -6477,5 +6481,6 @@ Generado por Sistema Horarios
     // ====================================================================
     1) se agrega validacion para los registros futuros, ahora no se puede crear un registro
     con fecha mas alta que la actual, con excepcion de los registros especiales (feriados, etc)
+    2) se corrige la importacion de registros con la variable credito, las cuales no se importaban
 
     -->
