@@ -1526,7 +1526,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.72</span>
+                <span class="version-text">v6.71</span>
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -6487,62 +6487,19 @@ Generado por Sistema Horarios
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then(registration => {
-                        console.log('✅ SW registrado:', registration.scope);
-
-                        // Detectar actualizaciones
+                        console.log('SW registrado:', registration.scope);
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
-
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    mostrarCountdownYRecargar();
+                                    // Lógica visual para avisar al usuario
+                                    if (window.UILogic) UILogic.mostrarToast('Nueva versión disponible. Recarga la página.', 'info');
                                 }
                             });
                         });
-
-                        // Verificar si ya hay actualización esperando
-                        if (registration.waiting) {
-                            mostrarCountdownYRecargar();
-                        }
                     })
                     .catch(err => console.error('❌ Error SW:', err));
             });
-
-            // Listener para cuando el SW toma control
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log('🔄 Nuevo SW activado, recargando...');
-                window.location.reload();
-            });
-        }
-
-        // ⏱️ Función de countdown y recarga automática
-        function mostrarCountdownYRecargar() {
-            let segundosRestantes = 5; // Ajusta el tiempo aquí (3, 5, 10, etc.)
-
-            const toast = document.getElementById('toast');
-            if (!toast) return;
-
-            // Actualizar mensaje cada segundo
-            const intervalo = setInterval(() => {
-                segundosRestantes--;
-
-                if (segundosRestantes > 0) {
-                    toast.textContent = `🔄 Nueva versión disponible. Recargando en ${segundosRestantes}...`;
-                    toast.className = 'toast info show';
-                } else {
-                    clearInterval(intervalo);
-                    toast.textContent = '🔄 Actualizando...';
-
-                    // Recargar después de 500ms
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 500);
-                }
-            }, 1000);
-
-            // Mostrar mensaje inicial
-            toast.textContent = `🔄 Nueva versión disponible. Recargando en ${segundosRestantes}...`;
-            toast.className = 'toast info show';
         }
     </script>
 </body>
@@ -6550,8 +6507,8 @@ Generado por Sistema Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.72
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.71
     // ====================================================================
-    1) 
+    1) Se corrige el toggle theme que no guardaba el modo
 
     -->
